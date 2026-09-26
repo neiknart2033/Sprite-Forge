@@ -33,9 +33,6 @@ export const metadata: Metadata = {
     'power of two texture atlas packer online',
   ],
   authors: [{ name: 'Sprite-Forge Team' }],
-  verification: {
-    google: 'google26a147bfd3038e0a',
-  },
 };
 
 export default function RootLayout({
