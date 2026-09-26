@@ -16,6 +16,8 @@
 # next.js build outputs
 /.next/
 /out/
+/out-itch/
+*.zip
 
 # production
 /build

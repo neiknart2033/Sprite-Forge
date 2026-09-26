@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "package:itch": "next build && node scripts/build-itch.mjs && powershell -Command \"Compress-Archive -Path 'out-itch/*' -DestinationPath 'sprite-forge-itch.zip' -Force\"",
     "start": "next start",
     "lint": "eslint"
   },
