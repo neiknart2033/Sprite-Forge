@@ -210,7 +210,17 @@ export function packSpriteFrames(
 ): AtlasResult | null {
   if (!inputFrames || inputFrames.length === 0) return null;
 
-  const { padding, extrude, potLock, algorithm, sortBy, maxDimension } = config;
+  const {
+    padding,
+    extrude,
+    potLock,
+    algorithm,
+    sortBy,
+    maxDimension,
+    sizeMode = 'auto',
+    fixedWidth = 1024,
+    fixedHeight = 1024,
+  } = config;
   const method = algorithm === 'maxrects-baf' ? 'baf' : 'bssf';
   const marginOffset = extrude > 0 ? 1 : 0;
   const spacing = padding + marginOffset * 2;
@@ -240,44 +250,30 @@ export function packSpriteFrames(
     }
   });
 
-  // 3. Find minimal Atlas dimensions through binary expansion
-  let testWidth = 128;
-  let testHeight = 128;
-
-  // Estimate total area needed
-  const totalArea = sorted.reduce((sum, f) => {
-    const w = (f.canvas?.width || f.frame.w) + spacing;
-    const h = (f.canvas?.height || f.frame.h) + spacing;
-    return sum + w * h;
-  }, 0);
-
-  const initialDimension = Math.max(
-    64,
-    potLock ? nextPowerOfTwo(Math.ceil(Math.sqrt(totalArea))) : Math.ceil(Math.sqrt(totalArea))
-  );
-
-  testWidth = initialDimension;
-  testHeight = initialDimension;
-
   let packedFrames: PackedFrame[] = [];
-  let success = false;
+  let finalWidth = 0;
+  let finalHeight = 0;
+  let overflow = false;
+  let unpackedCount = 0;
 
-  while (!success && (testWidth <= maxDimension || testHeight <= maxDimension)) {
-    const packer = new MaxRectsBinPacker(testWidth, testHeight);
-    let allFitted = true;
-    const currentPacked: PackedFrame[] = [];
+  if (sizeMode === 'fixed') {
+    finalWidth = Math.max(16, fixedWidth);
+    finalHeight = Math.max(16, fixedHeight);
+    const packer = new MaxRectsBinPacker(finalWidth, finalHeight);
 
+    const fitted: PackedFrame[] = [];
     for (const frame of sorted) {
       const fw = (frame.canvas?.width || frame.frame.w) + spacing;
       const fh = (frame.canvas?.height || frame.frame.h) + spacing;
 
       const rect = packer.insert(fw, fh, method);
       if (!rect) {
-        allFitted = false;
-        break;
+        overflow = true;
+        unpackedCount++;
+        continue;
       }
 
-      currentPacked.push({
+      fitted.push({
         ...frame,
         packedX: rect.x + marginOffset,
         packedY: rect.y + marginOffset,
@@ -286,36 +282,84 @@ export function packSpriteFrames(
       });
     }
 
-    if (allFitted) {
-      packedFrames = currentPacked;
-      success = true;
-      break;
+    packedFrames = fitted;
+  } else {
+    // 3. Find minimal Atlas dimensions through binary expansion (Auto mode)
+    let testWidth = 128;
+    let testHeight = 128;
+
+    // Estimate total area needed
+    const totalArea = sorted.reduce((sum, f) => {
+      const w = (f.canvas?.width || f.frame.w) + spacing;
+      const h = (f.canvas?.height || f.frame.h) + spacing;
+      return sum + w * h;
+    }, 0);
+
+    const initialDimension = Math.max(
+      64,
+      potLock ? nextPowerOfTwo(Math.ceil(Math.sqrt(totalArea))) : Math.ceil(Math.sqrt(totalArea))
+    );
+
+    testWidth = initialDimension;
+    testHeight = initialDimension;
+
+    let success = false;
+
+    while (!success && (testWidth <= maxDimension || testHeight <= maxDimension)) {
+      const packer = new MaxRectsBinPacker(testWidth, testHeight);
+      let allFitted = true;
+      const currentPacked: PackedFrame[] = [];
+
+      for (const frame of sorted) {
+        const fw = (frame.canvas?.width || frame.frame.w) + spacing;
+        const fh = (frame.canvas?.height || frame.frame.h) + spacing;
+
+        const rect = packer.insert(fw, fh, method);
+        if (!rect) {
+          allFitted = false;
+          break;
+        }
+
+        currentPacked.push({
+          ...frame,
+          packedX: rect.x + marginOffset,
+          packedY: rect.y + marginOffset,
+          packedW: frame.canvas?.width || frame.frame.w,
+          packedH: frame.canvas?.height || frame.frame.h,
+        });
+      }
+
+      if (allFitted) {
+        packedFrames = currentPacked;
+        success = true;
+        break;
+      }
+
+      // Grow dimension
+      if (testWidth <= testHeight) {
+        testWidth = potLock ? testWidth * 2 : Math.ceil(testWidth * 1.4);
+      } else {
+        testHeight = potLock ? testHeight * 2 : Math.ceil(testHeight * 1.4);
+      }
     }
 
-    // Grow dimension
-    if (testWidth <= testHeight) {
-      testWidth = potLock ? testWidth * 2 : Math.ceil(testWidth * 1.4);
-    } else {
-      testHeight = potLock ? testHeight * 2 : Math.ceil(testHeight * 1.4);
+    if (!success) {
+      return null;
     }
-  }
 
-  if (!success) {
-    return null;
-  }
+    // Calculate actual bounding area
+    let maxUsedX = 0;
+    let maxUsedY = 0;
+    for (const pf of packedFrames) {
+      const right = pf.packedX + pf.packedW + marginOffset;
+      const bottom = pf.packedY + pf.packedH + marginOffset;
+      if (right > maxUsedX) maxUsedX = right;
+      if (bottom > maxUsedY) maxUsedY = bottom;
+    }
 
-  // Calculate actual bounding area
-  let maxUsedX = 0;
-  let maxUsedY = 0;
-  for (const pf of packedFrames) {
-    const right = pf.packedX + pf.packedW + marginOffset;
-    const bottom = pf.packedY + pf.packedH + marginOffset;
-    if (right > maxUsedX) maxUsedX = right;
-    if (bottom > maxUsedY) maxUsedY = bottom;
+    finalWidth = potLock ? nextPowerOfTwo(maxUsedX) : Math.max(1, maxUsedX);
+    finalHeight = potLock ? nextPowerOfTwo(maxUsedY) : Math.max(1, maxUsedY);
   }
-
-  const finalWidth = potLock ? nextPowerOfTwo(maxUsedX) : Math.max(1, maxUsedX);
-  const finalHeight = potLock ? nextPowerOfTwo(maxUsedY) : Math.max(1, maxUsedY);
 
   // Render to Atlas Canvas
   const atlasCanvas = document.createElement('canvas');
@@ -348,5 +392,7 @@ export function packSpriteFrames(
     height: finalHeight,
     frames: packedFrames,
     occupancyRate,
+    overflow,
+    unpackedCount,
   };
 }

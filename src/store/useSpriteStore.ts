@@ -121,6 +121,9 @@ export const useSpriteStore = create<SpriteStore>((set, get) => ({
     trimAlpha: true,
     allowRotation: false,
     sortBy: 'max-side',
+    sizeMode: 'auto',
+    fixedWidth: 1024,
+    fixedHeight: 1024,
   },
 
   animationConfig: {
@@ -141,7 +144,12 @@ export const useSpriteStore = create<SpriteStore>((set, get) => ({
     showRuler: false,
   },
 
-  setAppMode: (mode) => set({ appMode: mode }),
+  setAppMode: (mode) => {
+    set({ appMode: mode });
+    if (mode === 'pack' && get().frames.length > 0 && !get().atlasResult) {
+      get().runPack();
+    }
+  },
   setViewMode: (mode) => set({ viewMode: mode }),
 
   loadSourceImage: async (file: File) => {

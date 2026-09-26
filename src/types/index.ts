@@ -44,6 +44,8 @@ export interface AtlasResult {
   height: number;
   frames: PackedFrame[];
   occupancyRate: number; // 0.0 - 1.0 (fill rate)
+  overflow?: boolean;
+  unpackedCount?: number;
 }
 
 export interface UnpackConfig {
@@ -71,6 +73,9 @@ export interface PackConfig {
   trimAlpha: boolean;
   allowRotation: boolean;
   sortBy: 'max-side' | 'area' | 'width' | 'height' | 'name';
+  sizeMode: 'auto' | 'fixed';
+  fixedWidth: number;
+  fixedHeight: number;
 }
 
 export interface AnimationConfig {

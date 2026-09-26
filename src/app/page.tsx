@@ -13,13 +13,20 @@ import { useSpriteStore } from '@/store/useSpriteStore';
 import { Eye, Film, Sliders } from 'lucide-react';
 
 export default function SpriteForgePage() {
-  const { frames, isExportModalOpen, closeExportModal, exportModalTarget } = useSpriteStore();
+  const { frames, isExportModalOpen, closeExportModal, exportModalTarget, appMode } = useSpriteStore();
 
   // Tablet (< xl, >= md): Switch between Results/Anim and Inspector in single right sidebar
   const [tabletSideTab, setTabletSideTab] = useState<'preview' | 'inspector'>('preview');
 
   // Mobile (< md): Switch between Canvas, Results/Anim, and Inspector
   const [mobileTab, setMobileTab] = useState<'canvas' | 'results' | 'inspector'>('canvas');
+
+  // Automatically ensure mobileTab is not on 'results' when in Pack mode
+  React.useEffect(() => {
+    if (appMode === 'pack' && mobileTab === 'results') {
+      setMobileTab('canvas');
+    }
+  }, [appMode, mobileTab]);
 
   return (
     <main className="min-h-screen flex flex-col bg-[#121316] text-zinc-100 selection:bg-blue-500/30 selection:text-white">
@@ -45,53 +52,62 @@ export default function SpriteForgePage() {
           <CanvasViewport />
         </div>
 
-        {/* Desktop View (xl: >= 1280px): Show BOTH side panels side-by-side */}
+        {/* Desktop View (xl: >= 1280px): Show AnimationPreview ONLY in Unpack mode */}
         <div className="hidden xl:flex h-full shrink-0">
-          <AnimationPreview standalone={true} />
+          {appMode === 'unpack' && <AnimationPreview standalone={true} />}
           <RightPanel />
         </div>
 
-        {/* Tablet View (md to xl: 768px - 1279px): Single Right Sidebar with dual tabs */}
+        {/* Tablet View (md to xl: 768px - 1279px): Single Right Sidebar */}
         <div className="hidden md:flex xl:hidden flex-col h-full max-h-full min-h-0 border-l border-[#25262e] bg-[#16171c] shrink-0">
-          {/* Dual Tab Header */}
-          <div className="shrink-0 flex items-center p-1 bg-[#14151a] border-b border-[#25262e] gap-1 text-xs">
-            <button
-              onClick={() => setTabletSideTab('preview')}
-              className={`flex-1 py-1 px-2 rounded font-medium flex items-center justify-center gap-1.5 transition ${
-                tabletSideTab === 'preview'
-                  ? 'bg-[#252838] text-blue-400 shadow-xs'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <Film className="w-3.5 h-3.5" />
-              <span>Results & Anim ({frames.length})</span>
-            </button>
+          {appMode === 'unpack' ? (
+            <>
+              {/* Dual Tab Header (Only in Unpack mode) */}
+              <div className="shrink-0 flex items-center p-1 bg-[#14151a] border-b border-[#25262e] gap-1 text-xs">
+                <button
+                  onClick={() => setTabletSideTab('preview')}
+                  className={`flex-1 py-1 px-2 rounded font-medium flex items-center justify-center gap-1.5 transition ${
+                    tabletSideTab === 'preview'
+                      ? 'bg-[#252838] text-blue-400 shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <Film className="w-3.5 h-3.5" />
+                  <span>Results & Anim ({frames.length})</span>
+                </button>
 
-            <button
-              onClick={() => setTabletSideTab('inspector')}
-              className={`flex-1 py-1 px-2 rounded font-medium flex items-center justify-center gap-1.5 transition ${
-                tabletSideTab === 'inspector'
-                  ? 'bg-[#252838] text-blue-400 shadow-xs'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Inspector</span>
-            </button>
-          </div>
+                <button
+                  onClick={() => setTabletSideTab('inspector')}
+                  className={`flex-1 py-1 px-2 rounded font-medium flex items-center justify-center gap-1.5 transition ${
+                    tabletSideTab === 'inspector'
+                      ? 'bg-[#252838] text-blue-400 shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>Inspector</span>
+                </button>
+              </div>
 
-          {/* Active Tab Content */}
-          <div className="flex-1 min-h-0 max-h-full overflow-hidden flex flex-col">
-            {tabletSideTab === 'preview' ? (
-              <AnimationPreview standalone={false} />
-            ) : (
+              {/* Active Tab Content */}
+              <div className="flex-1 min-h-0 max-h-full overflow-hidden flex flex-col">
+                {tabletSideTab === 'preview' ? (
+                  <AnimationPreview standalone={false} />
+                ) : (
+                  <RightPanel />
+                )}
+              </div>
+            </>
+          ) : (
+            /* In Pack mode, show RightPanel directly */
+            <div className="flex-1 min-h-0 max-h-full overflow-hidden flex flex-col">
               <RightPanel />
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Mobile Views (< md: < 768px): Full screen view for active tab */}
-        {mobileTab === 'results' && (
+        {appMode === 'unpack' && mobileTab === 'results' && (
           <div className="flex md:hidden flex-1 h-full max-h-full min-h-0 flex-col overflow-hidden pb-12">
             <AnimationPreview standalone={false} />
           </div>
@@ -115,18 +131,20 @@ export default function SpriteForgePage() {
             <span>Canvas</span>
           </button>
 
-          <button
-            onClick={() => setMobileTab('results')}
-            className={`flex flex-col items-center justify-center py-1 flex-1 transition relative ${
-              mobileTab === 'results' ? 'text-blue-400 font-medium' : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            <Film className="w-4 h-4 mb-0.5" />
-            <span>Results ({frames.length})</span>
-            {frames.length > 0 && (
-              <span className="absolute top-1 right-1/4 w-1.5 h-1.5 bg-blue-500 rounded-full" />
-            )}
-          </button>
+          {appMode === 'unpack' && (
+            <button
+              onClick={() => setMobileTab('results')}
+              className={`flex flex-col items-center justify-center py-1 flex-1 transition relative ${
+                mobileTab === 'results' ? 'text-blue-400 font-medium' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Film className="w-4 h-4 mb-0.5" />
+              <span>Results ({frames.length})</span>
+              {frames.length > 0 && (
+                <span className="absolute top-1 right-1/4 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+              )}
+            </button>
+          )}
 
           <button
             onClick={() => setMobileTab('inspector')}

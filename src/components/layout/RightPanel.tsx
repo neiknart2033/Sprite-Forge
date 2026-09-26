@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useSpriteStore } from '@/store/useSpriteStore';
-import { Box, Scissors, Layers, Gamepad2 } from 'lucide-react';
+import { Box, Scissors, Layers, Gamepad2, Maximize, AlertTriangle } from 'lucide-react';
 
 export function RightPanel() {
   const {
@@ -295,6 +295,175 @@ export function RightPanel() {
               <span>Pack Texture Atlas</span>
             </button>
 
+            {/* Atlas Dimension Controls */}
+            <div className="space-y-2 p-2.5 bg-[#1a1b22] border border-[#262833] rounded-lg">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] text-zinc-300 font-medium flex items-center gap-1.5">
+                  <Maximize className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Atlas Dimensions</span>
+                </label>
+                <span className="text-[10px] text-zinc-400 font-mono">
+                  {packConfig.sizeMode === 'fixed'
+                    ? `${packConfig.fixedWidth}×${packConfig.fixedHeight}`
+                    : 'Auto Fit'}
+                </span>
+              </div>
+
+              {/* Mode Toggle: Auto vs Fixed */}
+              <div className="grid grid-cols-2 gap-1 p-0.5 bg-[#14151a] border border-[#2b2d38] rounded-md">
+                <button
+                  type="button"
+                  onClick={() => updatePackConfig({ sizeMode: 'auto' })}
+                  className={`py-1 rounded text-[11px] font-medium transition ${
+                    packConfig.sizeMode === 'auto'
+                      ? 'bg-[#2b2d39] text-zinc-100 shadow-xs'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  Auto Fit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updatePackConfig({ sizeMode: 'fixed' })}
+                  className={`py-1 rounded text-[11px] font-medium transition ${
+                    packConfig.sizeMode === 'fixed'
+                      ? 'bg-[#2b2d39] text-zinc-100 shadow-xs'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  Fixed Size
+                </button>
+              </div>
+
+              {/* Fixed Dimension Controls */}
+              {packConfig.sizeMode === 'fixed' ? (
+                <div className="space-y-2 pt-1">
+                  <div>
+                    <label className="text-[10px] text-zinc-500 block mb-1">Quick Presets</label>
+                    <div className="grid grid-cols-4 gap-1">
+                      {[256, 512, 1024, 2048].map((size) => {
+                        const isSelected =
+                          packConfig.fixedWidth === size && packConfig.fixedHeight === size;
+                        return (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() =>
+                              updatePackConfig({ fixedWidth: size, fixedHeight: size })
+                            }
+                            className={`py-1 text-[10px] font-mono rounded border transition ${
+                              isSelected
+                                ? 'bg-blue-600/20 border-blue-500 text-blue-300 font-medium'
+                                : 'bg-[#1e1f26] border-[#2b2d37] text-zinc-400 hover:text-zinc-200 hover:border-zinc-500'
+                            }`}
+                          >
+                            {size}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 mt-1">
+                      {[4096, 8192].map((size) => {
+                        const isSelected =
+                          packConfig.fixedWidth === size && packConfig.fixedHeight === size;
+                        return (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() =>
+                              updatePackConfig({ fixedWidth: size, fixedHeight: size })
+                            }
+                            className={`py-1 text-[10px] font-mono rounded border transition ${
+                              isSelected
+                                ? 'bg-blue-600/20 border-blue-500 text-blue-300 font-medium'
+                                : 'bg-[#1e1f26] border-[#2b2d37] text-zinc-400 hover:text-zinc-200 hover:border-zinc-500'
+                            }`}
+                          >
+                            {size}×{size}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-0.5">
+                    <div>
+                      <label className="text-[10px] text-zinc-500">Width (px)</label>
+                      <input
+                        type="number"
+                        min={16}
+                        max={8192}
+                        step={64}
+                        value={packConfig.fixedWidth}
+                        onChange={(e) =>
+                          updatePackConfig({
+                            fixedWidth: Math.max(16, Number(e.target.value)),
+                          })
+                        }
+                        className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 font-mono text-[11px] focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500">Height (px)</label>
+                      <input
+                        type="number"
+                        min={16}
+                        max={8192}
+                        step={64}
+                        value={packConfig.fixedHeight}
+                        onChange={(e) =>
+                          updatePackConfig({
+                            fixedHeight: Math.max(16, Number(e.target.value)),
+                          })
+                        }
+                        className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 font-mono text-[11px] focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="flex justify-between items-center text-[10px] text-zinc-400">
+                    <span>Max Constraint</span>
+                    <select
+                      value={packConfig.maxDimension}
+                      onChange={(e) =>
+                        updatePackConfig({ maxDimension: Number(e.target.value) })
+                      }
+                      className="px-1.5 py-0.5 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 text-[10px] focus:outline-none focus:border-blue-500"
+                    >
+                      <option value={1024}>1024px</option>
+                      <option value={2048}>2048px</option>
+                      <option value={4096}>4096px</option>
+                      <option value={8192}>8192px</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer pt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={packConfig.potLock}
+                      onChange={(e) => updatePackConfig({ potLock: e.target.checked })}
+                      className="w-3.5 h-3.5 rounded bg-[#1f2027] border-[#2b2d38] text-blue-500 focus:ring-0"
+                    />
+                    <span className="text-[11px] text-zinc-400">Power of Two (POT)</span>
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* Overflow warning banner if fixed size is too small */}
+            {atlasResult?.overflow && (
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-300 text-[11px] flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+                <div>
+                  <div className="font-semibold text-amber-200">Atlas Overflow</div>
+                  <div className="text-[10px] text-amber-300/80 leading-snug mt-0.5">
+                    {atlasResult.unpackedCount} sprite(s) did not fit into {atlasResult.width}×{atlasResult.height}px. Increase atlas size or decrease padding.
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="text-[10px] text-zinc-500">Packing Algorithm</label>
               <select
@@ -344,16 +513,6 @@ export function RightPanel() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={packConfig.potLock}
-                  onChange={(e) => updatePackConfig({ potLock: e.target.checked })}
-                  className="w-3.5 h-3.5 rounded bg-[#1f2027] border-[#2b2d38] text-blue-500 focus:ring-0"
-                />
-                <span className="text-[11px] text-zinc-400">Power of Two (POT)</span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
                   checked={packConfig.trimAlpha}
                   onChange={(e) => updatePackConfig({ trimAlpha: e.target.checked })}
                   className="w-3.5 h-3.5 rounded bg-[#1f2027] border-[#2b2d38] text-blue-500 focus:ring-0"
@@ -382,6 +541,16 @@ export function RightPanel() {
                 <span className="text-zinc-500">Atlas Size:</span>
                 <span className="font-mono text-zinc-300">
                   {atlasResult.width}×{atlasResult.height}px
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Packed Sprites:</span>
+                <span
+                  className={`font-mono ${
+                    atlasResult.overflow ? 'text-amber-400 font-semibold' : 'text-zinc-300'
+                  }`}
+                >
+                  {atlasResult.frames.length} / {frames.length}
                 </span>
               </div>
               <div className="flex justify-between">
