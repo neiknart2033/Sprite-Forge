@@ -213,13 +213,13 @@ export function sliceUniformGrid(
         if (!isVisible) continue;
       }
 
-      const frameId = `frame_${String(index).padStart(3, '0')}`;
+      const frameId = `${baseName}_${index}`;
       const frameRect: Rect = { x, y, w: frameWidth, h: frameHeight };
       const frameCanvas = extractFrameCanvas(tempCanvas, frameRect);
 
       frames.push({
         id: frameId,
-        name: `${baseName}_${String(index).padStart(3, '0')}`,
+        name: `${baseName}_${index}`,
         frame: frameRect,
         rotated: false,
         trimmed: false,
@@ -347,12 +347,12 @@ export function sliceAlphaDetect(
 
   const frames: SpriteFrame[] = [];
   boundingBoxes.forEach((rect, i) => {
-    const frameId = `sprite_${String(i).padStart(3, '0')}`;
+    const frameId = `${baseName}_${i}`;
     const frameCanvas = extractFrameCanvas(tempCanvas, rect);
 
     frames.push({
       id: frameId,
-      name: `${baseName}_${String(i).padStart(3, '0')}`,
+      name: `${baseName}_${i}`,
       frame: rect,
       rotated: false,
       trimmed: false,

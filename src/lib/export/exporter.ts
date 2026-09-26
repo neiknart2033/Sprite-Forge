@@ -17,16 +17,20 @@ function generateUnityGuid(): string {
 
 /**
  * 1. Export JSON Hash (Phaser 3 / PixiJS standard)
+ * Child sprites are named `${baseName}_${index}` starting from 0
  */
 export function generatePhaserJson(
   atlasResult: AtlasResult,
-  imageFilename: string = 'spritesheet.png'
+  imageFilename: string = 'spritesheet.png',
+  baseName?: string
 ): PhaserJsonHash {
+  const base = baseName || imageFilename.replace(/\.[^/.]+$/, '');
   const framesRecord: PhaserJsonHash['frames'] = {};
 
-  for (const pf of atlasResult.frames) {
-    const filename = pf.name.endsWith('.png') ? pf.name : `${pf.name}.png`;
-    framesRecord[filename] = {
+  for (let i = 0; i < atlasResult.frames.length; i++) {
+    const pf = atlasResult.frames[i];
+    const frameKey = `${base}_${i}.png`;
+    framesRecord[frameKey] = {
       frame: {
         x: pf.packedX,
         y: pf.packedY,
@@ -56,13 +60,16 @@ export function generatePhaserJson(
 
 /**
  * 1b. Export JSON Array (Phaser 3 / PixiJS array format)
+ * Child sprites are named `${baseName}_${index}` starting from 0
  */
 export function generatePhaserJsonArray(
   atlasResult: AtlasResult,
-  imageFilename: string = 'spritesheet.png'
+  imageFilename: string = 'spritesheet.png',
+  baseName?: string
 ) {
-  const framesArray = atlasResult.frames.map((pf) => {
-    const filename = pf.name.endsWith('.png') ? pf.name : `${pf.name}.png`;
+  const base = baseName || imageFilename.replace(/\.[^/.]+$/, '');
+  const framesArray = atlasResult.frames.map((pf, i) => {
+    const filename = `${base}_${i}.png`;
     return {
       filename,
       frame: {
@@ -116,20 +123,23 @@ export function generateGodotTres(
 
 /**
  * 2b. Export Godot 4 SpriteFrames .tres Resource for AnimatedSprite2D
+ * Sub-resources are named `${baseName}_${index}` starting from 0
  */
 export function generateGodotSpriteFrames(
   atlasResult: AtlasResult,
   imagePath: string = 'res://spritesheet.png',
   fps: number = 12,
-  animationName: string = 'default'
+  animationName: string = 'default',
+  baseName?: string
 ): string {
+  const base = baseName || imagePath.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'sprite';
   const frameCount = atlasResult.frames.length;
   let subResources = '';
   const frameEntries: string[] = [];
 
   for (let i = 0; i < frameCount; i++) {
     const f = atlasResult.frames[i];
-    const subId = `AtlasTexture_${i}`;
+    const subId = `AtlasTexture_${base}_${i}`;
     subResources += `[sub_resource type="AtlasTexture" id="${subId}"]\n`;
     subResources += `atlas = ExtResource("1_atlas")\n`;
     subResources += `region = Rect2(${f.packedX}, ${f.packedY}, ${f.packedW}, ${f.packedH})\n`;
@@ -161,12 +171,15 @@ animations = [{
 
 /**
  * 3. Export Unity 2D Sprite Sheet .meta File (YAML)
- * Coordinates are mapped to Unity's bottom-left origin
+ * Coordinates are mapped to Unity's bottom-left origin.
+ * Child sprites are strictly named `${baseName}_${index}` starting from 0 (e.g. knight_0, knight_1, ...).
  */
 export function generateUnityMeta(
   atlasResult: AtlasResult,
-  imageFilename: string = 'spritesheet.png'
+  imageFilename: string = 'spritesheet.png',
+  baseName?: string
 ): string {
+  const base = baseName || imageFilename.replace(/\.[^/.]+$/, '');
   const fileGuid = generateUnityGuid();
   const texH = atlasResult.height;
 
@@ -180,9 +193,10 @@ export function generateUnityMeta(
     const unityY = Math.max(0, texH - (f.packedY + f.packedH));
     const pivotX = f.pivot ? f.pivot.x : 0.5;
     const pivotY = f.pivot ? 1.0 - f.pivot.y : 0.0; // In Unity 0 is bottom, 0.5 is center, 1 is top
+    const childSpriteName = `${base}_${i}`;
 
     spritesYaml += `      - serializedVersion: 2
-        name: ${f.name || `frame_${i}`}
+        name: ${childSpriteName}
         rect:
           serializedVersion: 2
           x: ${unityX}
@@ -270,14 +284,17 @@ ${spritesYaml}  spritePackingTag:
 
 /**
  * 3b. Export Unity Sprite Sheet JSON
+ * Child sprites are named `${baseName}_${index}` starting from 0
  */
 export function generateUnityJson(
   atlasResult: AtlasResult,
-  imageFilename: string = 'spritesheet.png'
+  imageFilename: string = 'spritesheet.png',
+  baseName?: string
 ): string {
+  const base = baseName || imageFilename.replace(/\.[^/.]+$/, '');
   const texH = atlasResult.height;
   const sprites = atlasResult.frames.map((f, i) => ({
-    name: f.name || `frame_${i}`,
+    name: `${base}_${i}`,
     rect: {
       x: f.packedX,
       y: Math.max(0, texH - (f.packedY + f.packedH)),
@@ -304,12 +321,17 @@ export function generateUnityJson(
 
 /**
  * 4. Export CSV Format for Generic Engines (Raylib, LÖVE 2D, Pygame, C++)
+ * Child sprites are named `${baseName}_${index}` starting from 0
  */
-export function generateCsvData(atlasResult: AtlasResult): string {
+export function generateCsvData(atlasResult: AtlasResult, baseName?: string): string {
+  const base =
+    baseName ||
+    (atlasResult.frames[0]?.name ? atlasResult.frames[0].name.replace(/_\d+$/, '') : 'sprite');
+
   let csv = 'name,x,y,width,height,pivot_x,pivot_y\n';
   for (let i = 0; i < atlasResult.frames.length; i++) {
     const f = atlasResult.frames[i];
-    const name = f.name || `frame_${i}`;
+    const name = `${base}_${i}`;
     const px = f.pivot ? f.pivot.x.toFixed(3) : '0.500';
     const py = f.pivot ? f.pivot.y.toFixed(3) : '1.000';
     csv += `"${name}",${f.packedX},${f.packedY},${f.packedW},${f.packedH},${px},${py}\n`;
@@ -319,16 +341,20 @@ export function generateCsvData(atlasResult: AtlasResult): string {
 
 /**
  * 5. Export CSS Spritesheet Styles
+ * Classes are named `.${baseName}_${index}` starting from 0
  */
 export function generateCssSprites(
   atlasResult: AtlasResult,
-  imageFilename: string = 'spritesheet.png'
+  imageFilename: string = 'spritesheet.png',
+  baseName?: string
 ): string {
+  const base = (baseName || imageFilename.replace(/\.[^/.]+$/, '')).replace(/[^a-zA-Z0-9_-]/g, '_');
   let css = `/* Generated by Sprite-Forge */\n`;
   css += `.sprite {\n  display: inline-block;\n  background-image: url('${imageFilename}');\n  background-repeat: no-repeat;\n}\n\n`;
 
-  for (const pf of atlasResult.frames) {
-    const className = pf.name.replace(/[^a-zA-Z0-9_-]/g, '-');
+  for (let i = 0; i < atlasResult.frames.length; i++) {
+    const pf = atlasResult.frames[i];
+    const className = `${base}_${i}`;
     css += `.${className} {\n`;
     css += `  width: ${pf.packedW}px;\n`;
     css += `  height: ${pf.packedH}px;\n`;
@@ -341,11 +367,15 @@ export function generateCssSprites(
 
 /**
  * 6. Export All Frames as a ZIP Bundle
+ * Files are named `${baseName}_${index}.png` starting from 0
  */
 export async function downloadFramesZip(
   frames: SpriteFrame[],
-  zipFilename: string = 'sprite_frames.zip'
+  zipFilename: string = 'sprite_frames.zip',
+  baseName?: string
 ): Promise<void> {
+  const base =
+    baseName || (frames[0]?.name ? frames[0].name.replace(/_\d+$/, '') : 'frame');
   const zip = new JSZip();
 
   for (let i = 0; i < frames.length; i++) {
@@ -353,7 +383,7 @@ export async function downloadFramesZip(
     if (!frame.canvas) continue;
 
     const base64Data = frame.canvas.toDataURL('image/png').split(',')[1];
-    const filename = `${frame.name || `frame_${String(i).padStart(3, '0')}`}.png`;
+    const filename = `${base}_${i}.png`;
     zip.file(filename, base64Data, { base64: true });
   }
 
@@ -363,6 +393,7 @@ export async function downloadFramesZip(
 
 /**
  * 7. Download Unity Bundle (.png + .png.meta + .json + README)
+ * Child sprites are named `${baseName}_${index}` starting from 0
  */
 export async function downloadUnityBundle(
   atlasResult: AtlasResult,
@@ -375,20 +406,23 @@ export async function downloadUnityBundle(
   zip.file(`${baseName}.png`, pngBase64, { base64: true });
 
   // 2. Unity .meta file
-  const metaContent = generateUnityMeta(atlasResult, `${baseName}.png`);
+  const metaContent = generateUnityMeta(atlasResult, `${baseName}.png`, baseName);
   zip.file(`${baseName}.png.meta`, metaContent);
 
   // 3. Unity Sprite JSON
-  const jsonContent = generateUnityJson(atlasResult, `${baseName}.png`);
+  const jsonContent = generateUnityJson(atlasResult, `${baseName}.png`, baseName);
   zip.file(`${baseName}_sprites.json`, jsonContent);
 
   // 4. Readme instructions
   const readme = `Unity 2D Sprite Sheet Bundle - Generated by Sprite-Forge
 =======================================================
+Child Sprites Naming:
+All child sprites are named as "${baseName}_0", "${baseName}_1", "${baseName}_2", etc. (0-indexed).
+
 How to use in Unity:
 1. Drag both "${baseName}.png" and "${baseName}.png.meta" into your Unity project Assets folder (e.g. Assets/Sprites/).
 2. Unity will automatically detect the sprite sheet, set Sprite Mode to "Multiple", and import all sliced sprites with custom bounds and pivots.
-3. You can also view or parse "${baseName}_sprites.json" via JsonUtility or your custom importer script.
+3. You can access individual sprites by name (e.g. sprite = atlas.GetSprite("${baseName}_0")) or generate animation clips automatically.
 `;
   zip.file(`README_UNITY.txt`, readme);
 
@@ -398,6 +432,7 @@ How to use in Unity:
 
 /**
  * 8. Download Godot 4 Bundle (.png + SpriteFrames .tres + AtlasTexture .tres + README)
+ * Child sprites/textures are named `${baseName}_${index}` starting from 0
  */
 export async function downloadGodotBundle(
   atlasResult: AtlasResult,
@@ -415,7 +450,8 @@ export async function downloadGodotBundle(
     atlasResult,
     `res://${baseName}.png`,
     fps,
-    'default'
+    'default',
+    baseName
   );
   zip.file(`${baseName}_sprite_frames.tres`, spriteFrames);
 
@@ -426,6 +462,9 @@ export async function downloadGodotBundle(
   // 4. Readme instructions
   const readme = `Godot 4 2D Sprite Bundle - Generated by Sprite-Forge
 ===================================================
+Child Sprites Naming:
+All sub-resources and frame textures are named "${baseName}_0", "${baseName}_1", etc. (0-indexed).
+
 How to use in Godot 4:
 1. Copy "${baseName}.png" and "${baseName}_sprite_frames.tres" into your Godot project (e.g. res://sprites/).
 2. Create an AnimatedSprite2D node in your scene.
@@ -453,27 +492,27 @@ export async function downloadUniversalBundle(
   zip.file(`${baseName}.png`, pngBase64, { base64: true });
 
   // 2. Unity .meta & JSON
-  zip.file(`${baseName}.png.meta`, generateUnityMeta(atlasResult, `${baseName}.png`));
-  zip.file(`${baseName}_unity.json`, generateUnityJson(atlasResult, `${baseName}.png`));
+  zip.file(`${baseName}.png.meta`, generateUnityMeta(atlasResult, `${baseName}.png`, baseName));
+  zip.file(`${baseName}_unity.json`, generateUnityJson(atlasResult, `${baseName}.png`, baseName));
 
   // 3. Godot 4 SpriteFrames & AtlasTexture
   zip.file(
     `${baseName}_godot_frames.tres`,
-    generateGodotSpriteFrames(atlasResult, `res://${baseName}.png`, fps, 'default')
+    generateGodotSpriteFrames(atlasResult, `res://${baseName}.png`, fps, 'default', baseName)
   );
   zip.file(`${baseName}_godot_atlas.tres`, generateGodotTres(atlasResult, `res://${baseName}.png`));
 
   // 4. Phaser / PixiJS JSON
   zip.file(
     `${baseName}_phaser.json`,
-    JSON.stringify(generatePhaserJson(atlasResult, `${baseName}.png`), null, 2)
+    JSON.stringify(generatePhaserJson(atlasResult, `${baseName}.png`, baseName), null, 2)
   );
 
   // 5. CSS Spritesheet
-  zip.file(`${baseName}.css`, generateCssSprites(atlasResult, `${baseName}.png`));
+  zip.file(`${baseName}.css`, generateCssSprites(atlasResult, `${baseName}.png`, baseName));
 
   // 6. CSV Data
-  zip.file(`${baseName}.csv`, generateCsvData(atlasResult));
+  zip.file(`${baseName}.csv`, generateCsvData(atlasResult, baseName));
 
   const content = await zip.generateAsync({ type: 'blob' });
   saveAs(content, `${baseName}_all_engines_bundle.zip`);
@@ -493,7 +532,7 @@ export async function downloadAtlasZip(
   zip.file(`${baseName}.png`, pngBase64, { base64: true });
 
   // 2. Phaser/PixiJS JSON
-  const jsonMetadata = generatePhaserJson(atlasResult, `${baseName}.png`);
+  const jsonMetadata = generatePhaserJson(atlasResult, `${baseName}.png`, baseName);
   zip.file(`${baseName}.json`, JSON.stringify(jsonMetadata, null, 2));
 
   // 3. Godot 4 .tres
@@ -501,7 +540,7 @@ export async function downloadAtlasZip(
   zip.file(`${baseName}.tres`, godotTres);
 
   // 4. CSS Spritesheet
-  const css = generateCssSprites(atlasResult, `${baseName}.png`);
+  const css = generateCssSprites(atlasResult, `${baseName}.png`, baseName);
   zip.file(`${baseName}.css`, css);
 
   const blob = await zip.generateAsync({ type: 'blob' });

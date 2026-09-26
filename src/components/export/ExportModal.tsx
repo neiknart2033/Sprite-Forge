@@ -123,29 +123,30 @@ export function ExportModal({ isOpen, onClose, defaultTarget = 'unity' }: Export
     }
 
     const imgName = `${baseName || 'spritesheet'}.png`;
+    const prefix = baseName || 'sprite';
 
     switch (target) {
       case 'unity':
-        return generateUnityMeta(effectiveAtlas!, imgName);
+        return generateUnityMeta(effectiveAtlas!, imgName, prefix);
       case 'godot':
-        return generateGodotSpriteFrames(effectiveAtlas!, godotPath, fps, godotAnimName);
+        return generateGodotSpriteFrames(effectiveAtlas!, godotPath, fps, godotAnimName, prefix);
       case 'phaser':
         return phaserFormat === 'hash'
-          ? JSON.stringify(generatePhaserJson(effectiveAtlas!, imgName), null, 2)
-          : JSON.stringify(generatePhaserJsonArray(effectiveAtlas!, imgName), null, 2);
+          ? JSON.stringify(generatePhaserJson(effectiveAtlas!, imgName, prefix), null, 2)
+          : JSON.stringify(generatePhaserJsonArray(effectiveAtlas!, imgName, prefix), null, 2);
       case 'csv':
-        return generateCsvData(effectiveAtlas!);
+        return generateCsvData(effectiveAtlas!, prefix);
       case 'css':
-        return generateCssSprites(effectiveAtlas!, imgName);
+        return generateCssSprites(effectiveAtlas!, imgName, prefix);
       case 'universal':
-        return `// Universal Bundle contains all engine formats:\n// 1. ${baseName}.png (Texture Sheet)\n// 2. ${baseName}.png.meta (Unity 2D Multiple Sprites)\n// 3. ${baseName}_godot_frames.tres (Godot 4 AnimatedSprite2D)\n// 4. ${baseName}_godot_atlas.tres (Godot 4 AtlasTexture)\n// 5. ${baseName}_phaser.json (Phaser 3 / PixiJS)\n// 6. ${baseName}.csv (Universal Game Engines)\n// 7. ${baseName}.css (Web CSS Spritesheet)`;
+        return `// Universal Bundle contains all engine formats:\n// 1. ${prefix}.png (Texture Sheet)\n// 2. ${prefix}.png.meta (Unity 2D Multiple Sprites: ${prefix}_0, ${prefix}_1, ...)\n// 3. ${prefix}_godot_frames.tres (Godot 4 AnimatedSprite2D: ${prefix}_0, ${prefix}_1, ...)\n// 4. ${prefix}_godot_atlas.tres (Godot 4 AtlasTexture)\n// 5. ${prefix}_phaser.json (Phaser 3 / PixiJS: ${prefix}_0.png, ${prefix}_1.png, ...)\n// 6. ${prefix}.csv (Universal Game Engines: "${prefix}_0", "${prefix}_1", ...)\n// 7. ${prefix}.css (Web CSS Spritesheet: .${prefix}_0, .${prefix}_1, ...)`;
       case 'frames':
-        return `// Individual Frame Files:\n// Will export ${frames.length} separate PNG files packaged in a ZIP archive.\n${frames
+        return `// Individual Frame Files (0-indexed):\n// Will export ${frames.length} separate PNG files packaged in a ZIP archive.\n${frames
           .slice(0, 10)
-          .map((f, i) => `// - ${f.name || `frame_${i}`}.png (${f.frame.w}×${f.frame.h})`)
+          .map((_, i) => `// - ${prefix}_${i}.png`)
           .join('\n')}${frames.length > 10 ? `\n// ... and ${frames.length - 10} more` : ''}`;
       case 'gif':
-        return `// Animated GIF Configuration:\n// Total Frames: ${frames.length}\n// Framerate: ${fps} FPS\n// Output: ${baseName}.gif`;
+        return `// Animated GIF Configuration:\n// Total Frames: ${frames.length}\n// Framerate: ${fps} FPS\n// Output: ${prefix}.gif`;
       default:
         return '';
     }
@@ -171,20 +172,20 @@ export function ExportModal({ isOpen, onClose, defaultTarget = 'unity' }: Export
       } else if (target === 'phaser' && effectiveAtlas) {
         const json =
           phaserFormat === 'hash'
-            ? generatePhaserJson(effectiveAtlas, `${validBase}.png`)
-            : generatePhaserJsonArray(effectiveAtlas, `${validBase}.png`);
+            ? generatePhaserJson(effectiveAtlas, `${validBase}.png`, validBase)
+            : generatePhaserJsonArray(effectiveAtlas, `${validBase}.png`, validBase);
         const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
         saveAs(blob, `${validBase}_phaser.json`);
       } else if (target === 'csv' && effectiveAtlas) {
-        const csv = generateCsvData(effectiveAtlas);
+        const csv = generateCsvData(effectiveAtlas, validBase);
         const blob = new Blob([csv], { type: 'text/csv' });
         saveAs(blob, `${validBase}.csv`);
       } else if (target === 'css' && effectiveAtlas) {
-        const css = generateCssSprites(effectiveAtlas, `${validBase}.png`);
+        const css = generateCssSprites(effectiveAtlas, `${validBase}.png`, validBase);
         const blob = new Blob([css], { type: 'text/css' });
         saveAs(blob, `${validBase}.css`);
       } else if (target === 'frames') {
-        await downloadFramesZip(frames, `${validBase}_frames.zip`);
+        await downloadFramesZip(frames, `${validBase}_frames.zip`, validBase);
       } else if (target === 'gif') {
         await generateAndDownloadGif(frames, fps, `${validBase}.gif`);
       } else if (target === 'universal' && effectiveAtlas) {
@@ -202,11 +203,11 @@ export function ExportModal({ isOpen, onClose, defaultTarget = 'unity' }: Export
     const validBase = baseName || 'sprite_forge';
 
     if (target === 'unity') {
-      const meta = generateUnityMeta(effectiveAtlas, `${validBase}.png`);
+      const meta = generateUnityMeta(effectiveAtlas, `${validBase}.png`, validBase);
       const blob = new Blob([meta], { type: 'text/plain' });
       saveAs(blob, `${validBase}.png.meta`);
     } else if (target === 'godot') {
-      const tres = generateGodotSpriteFrames(effectiveAtlas, godotPath, fps, godotAnimName);
+      const tres = generateGodotSpriteFrames(effectiveAtlas, godotPath, fps, godotAnimName, validBase);
       const blob = new Blob([tres], { type: 'text/plain' });
       saveAs(blob, `${validBase}_sprite_frames.tres`);
     }
@@ -415,6 +416,11 @@ export function ExportModal({ isOpen, onClose, defaultTarget = 'unity' }: Export
                   onChange={(e) => setBaseName(e.target.value)}
                   className="w-full mt-1 px-2.5 py-1.5 bg-[#1e2029] border border-[#2b2d39] rounded text-zinc-200 font-mono text-xs focus:outline-none focus:border-blue-500"
                 />
+                <div className="text-[10px] text-zinc-500 font-mono mt-1 flex items-center gap-1">
+                  <span>Sprites:</span>
+                  <span className="text-blue-400">{baseName || 'sprite'}_0</span>,
+                  <span className="text-zinc-400">{baseName || 'sprite'}_1...</span>
+                </div>
               </div>
 
               {target === 'godot' && (
