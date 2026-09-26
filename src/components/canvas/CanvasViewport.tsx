@@ -232,12 +232,18 @@ export function CanvasViewport() {
     requestRender();
   }, [sourceImage, atlasResult, frames, selectedFrameIds, unpackConfig, requestRender]);
 
-  // Wheel Zoom
-  const handleWheel = useCallback(
-    (e: React.WheelEvent<HTMLCanvasElement>) => {
+  // Native Non-Passive Wheel Zoom (Prevents default page scroll while zooming)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const rect = canvasRef.current?.getBoundingClientRect();
-      if (!rect) return;
+      e.stopPropagation();
+
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
 
       const cursorCanvasX = e.clientX - rect.left;
       const cursorCanvasY = e.clientY - rect.top;
@@ -258,9 +264,13 @@ export function CanvasViewport() {
       });
 
       requestRender();
-    },
-    [setViewport, requestRender]
-  );
+    };
+
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', onWheel);
+    };
+  }, [setViewport, requestRender]);
 
   // Mouse Down
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -384,7 +394,6 @@ export function CanvasViewport() {
     >
       <canvas
         ref={canvasRef}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

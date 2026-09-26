@@ -23,13 +23,13 @@ export default function SpriteForgePage() {
         {/* Minimal Left Toolbar */}
         <LeftToolbar />
 
-        {/* Center Canvas Viewport & Bottom Animation Timeline */}
-        <div className="flex-1 flex flex-col min-w-0 bg-[#121316] relative overflow-hidden">
-          <div className="flex-1 relative overflow-hidden">
-            <CanvasViewport />
-          </div>
-          <AnimationPreview />
+        {/* Center Canvas Viewport (Drag & Drop + Slicing/Packing Canvas) */}
+        <div className="flex-1 min-w-0 bg-[#121316] relative overflow-hidden">
+          <CanvasViewport />
         </div>
+
+        {/* Timeline Preview (Positioned to the right of canvas viewport) */}
+        <AnimationPreview />
 
         {/* Right Inspector Panel */}
         <RightPanel />
