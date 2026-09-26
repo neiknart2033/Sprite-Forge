@@ -3,9 +3,6 @@
 import React, { useState } from 'react';
 import { useSpriteStore } from '@/store/useSpriteStore';
 import {
-  Sparkles,
-  Code2,
-  Palette,
   Download,
   FileArchive,
   Layers,
@@ -13,6 +10,8 @@ import {
   CheckCircle2,
   Loader2,
   FileCode,
+  Sparkles,
+  ChevronDown,
 } from 'lucide-react';
 import {
   downloadAtlasZip,
@@ -50,11 +49,11 @@ export function Header() {
 
   const runWithProgress = async (title: string, action: () => Promise<void>) => {
     setIsExportMenuOpen(false);
-    setExportModal({ isOpen: true, title, progress: 25, completed: false });
+    setExportModal({ isOpen: true, title, progress: 30, completed: false });
 
     setTimeout(() => {
-      setExportModal((prev) => ({ ...prev, progress: 65 }));
-    }, 400);
+      setExportModal((prev) => ({ ...prev, progress: 75 }));
+    }, 350);
 
     setTimeout(async () => {
       try {
@@ -62,24 +61,24 @@ export function Header() {
         setExportModal((prev) => ({ ...prev, progress: 100, completed: true }));
         setTimeout(() => {
           setExportModal((prev) => ({ ...prev, isOpen: false }));
-        }, 800);
+        }, 600);
       } catch (e) {
         console.error(e);
         setExportModal((prev) => ({ ...prev, isOpen: false }));
       }
-    }, 1000);
+    }, 850);
   };
 
   const handleExportAtlasBundle = () => {
     if (!atlasResult) return;
-    runWithProgress('Bundling Texture Atlas & Engine Metadata...', async () => {
+    runWithProgress('Bundling Texture Atlas...', async () => {
       await downloadAtlasZip(atlasResult, sourceImageName || 'spritesheet');
     });
   };
 
   const handleExportFramesZip = () => {
     if (frames.length === 0) return;
-    runWithProgress('Compressing Individual Frames into ZIP...', async () => {
+    runWithProgress('Exporting Frame PNGs (ZIP)...', async () => {
       await downloadFramesZip(frames, `${sourceImageName || 'sprite'}_frames.zip`);
     });
   };
@@ -102,198 +101,177 @@ export function Header() {
 
   const handleExportGif = () => {
     if (frames.length === 0) return;
-    runWithProgress('Compiling Animated GIF loop...', async () => {
+    runWithProgress('Encoding Animated GIF...', async () => {
       await generateAndDownloadGif(frames, animationConfig.fps, `${sourceImageName || 'anim'}.gif`);
     });
   };
 
   return (
     <>
-      <header className="h-14 border-b border-zinc-800 bg-zinc-950 px-4 flex items-center justify-between select-none z-30">
-        {/* Brand Logo & Title */}
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Layers className="w-4 h-4 text-white" />
+      <header className="h-12 border-b border-[#25262e] bg-[#16171c] px-4 flex items-center justify-between select-none z-30">
+        {/* Left: Clean Brand Logo */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-md bg-[#252733] border border-[#333544] flex items-center justify-center text-zinc-200">
+            <Layers className="w-3.5 h-3.5 text-blue-400" />
           </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-white tracking-tight text-sm">Sprite-Forge</span>
-              <span className="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                v1.0
-              </span>
-            </div>
-            <p className="text-[10px] text-zinc-500 hidden sm:block">
-              Online 2-in-1 Sprite Slicer & Optimal Atlas Packer
-            </p>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-zinc-100 text-xs tracking-tight">Sprite-Forge</span>
+            <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">v1.0</span>
           </div>
         </div>
 
-        {/* Center: Unpack / Pack Mode Switcher */}
-        <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1">
-          <button
-            onClick={() => setAppMode('unpack')}
-            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition ${
-              appMode === 'unpack'
-                ? 'bg-blue-600 text-white shadow'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Scissors className="w-3.5 h-3.5" />
-            <span>Unpack (Slicer)</span>
-          </button>
-
-          <button
-            onClick={() => setAppMode('pack')}
-            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition ${
-              appMode === 'pack'
-                ? 'bg-blue-600 text-white shadow'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Pack (Atlas Packer)</span>
-          </button>
-        </div>
-
-        {/* Right: Artist / Dev View Toggle & Export Dropdown */}
+        {/* Center: Segmented Controls (Figma / Webflow style) */}
         <div className="flex items-center gap-3">
-          {/* Dual Audience Mode Switcher */}
-          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 text-xs">
+          {/* Mode Switcher */}
+          <div className="flex items-center bg-[#1e1f26] border border-[#2b2c36] rounded-md p-0.5 text-xs">
+            <button
+              onClick={() => setAppMode('unpack')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded transition text-xs font-medium ${
+                appMode === 'unpack'
+                  ? 'bg-[#2b2d39] text-zinc-100 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Scissors className="w-3 h-3" />
+              <span>Slicer</span>
+            </button>
+            <button
+              onClick={() => setAppMode('pack')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded transition text-xs font-medium ${
+                appMode === 'pack'
+                  ? 'bg-[#2b2d39] text-zinc-100 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Layers className="w-3 h-3" />
+              <span>Atlas Packer</span>
+            </button>
+          </div>
+
+          {/* Perspective View Switcher */}
+          <div className="hidden md:flex items-center bg-[#1e1f26] border border-[#2b2c36] rounded-md p-0.5 text-xs">
             <button
               onClick={() => setViewMode('artist')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded transition ${
+              className={`px-2.5 py-1 rounded transition text-xs font-medium ${
                 viewMode === 'artist'
-                  ? 'bg-zinc-800 text-amber-400 font-medium'
-                  : 'text-zinc-400 hover:text-zinc-300'
+                  ? 'bg-[#2b2d39] text-zinc-100'
+                  : 'text-zinc-400 hover:text-zinc-200'
               }`}
-              title="Artist Mode: Focused on visual fidelity, animations, and pixel art"
             >
-              <Palette className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Artist</span>
+              Artist
             </button>
             <button
               onClick={() => setViewMode('developer')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded transition ${
+              className={`px-2.5 py-1 rounded transition text-xs font-medium ${
                 viewMode === 'developer'
-                  ? 'bg-zinc-800 text-emerald-400 font-medium'
-                  : 'text-zinc-400 hover:text-zinc-300'
+                  ? 'bg-[#2b2d39] text-zinc-100'
+                  : 'text-zinc-400 hover:text-zinc-200'
               }`}
-              title="Developer Mode: Power-of-Two, extrude bleeding guards, engine schemas"
             >
-              <Code2 className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Developer</span>
+              Developer
             </button>
           </div>
+        </div>
 
-          {/* Export Button & Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-              disabled={frames.length === 0 && !atlasResult}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-lg transition shadow-md shadow-blue-500/10"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export</span>
-            </button>
+        {/* Right: Export Button */}
+        <div className="relative">
+          <button
+            onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+            disabled={frames.length === 0 && !atlasResult}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#252836] hover:bg-[#2e3142] border border-[#383a4d] disabled:opacity-40 text-zinc-100 font-medium text-xs rounded-md transition shadow-xs"
+          >
+            <Download className="w-3.5 h-3.5 text-blue-400" />
+            <span>Export</span>
+            <ChevronDown className="w-3 h-3 text-zinc-400 ml-0.5" />
+          </button>
 
-            {isExportMenuOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl p-1 z-50 text-xs animate-in fade-in zoom-in-95">
-                <div className="px-2 py-1.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                  Atlas & Engine Exports
+          {isExportMenuOpen && (
+            <div className="absolute right-0 mt-1.5 w-60 bg-[#1c1d23] border border-[#2c2d38] rounded-lg shadow-xl p-1 z-50 text-xs">
+              <button
+                onClick={handleExportAtlasBundle}
+                disabled={!atlasResult}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-md flex items-center gap-2.5 text-zinc-200 transition"
+              >
+                <FileArchive className="w-3.5 h-3.5 text-blue-400" />
+                <div>
+                  <div className="font-medium text-xs">Atlas Bundle (ZIP)</div>
+                  <div className="text-[10px] text-zinc-500">PNG + JSON + Godot .tres + CSS</div>
                 </div>
+              </button>
 
-                <button
-                  onClick={handleExportAtlasBundle}
-                  disabled={!atlasResult}
-                  className="w-full text-left px-2.5 py-2 hover:bg-zinc-800 disabled:opacity-30 rounded-lg flex items-center gap-2 text-zinc-200"
-                >
-                  <FileArchive className="w-4 h-4 text-blue-400" />
-                  <div>
-                    <div className="font-medium">Atlas Bundle (ZIP)</div>
-                    <div className="text-[10px] text-zinc-400">PNG + JSON + Godot tres + CSS</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={handleExportJsonOnly}
-                  disabled={!atlasResult}
-                  className="w-full text-left px-2.5 py-2 hover:bg-zinc-800 disabled:opacity-30 rounded-lg flex items-center gap-2 text-zinc-200"
-                >
-                  <FileCode className="w-4 h-4 text-amber-400" />
-                  <div>
-                    <div className="font-medium">Phaser / PixiJS JSON</div>
-                    <div className="text-[10px] text-zinc-400">Open Hash schema metadata</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={handleExportGodotOnly}
-                  disabled={!atlasResult}
-                  className="w-full text-left px-2.5 py-2 hover:bg-zinc-800 disabled:opacity-30 rounded-lg flex items-center gap-2 text-zinc-200"
-                >
-                  <FileCode className="w-4 h-4 text-emerald-400" />
-                  <div>
-                    <div className="font-medium">Godot 4 Atlas (.tres)</div>
-                    <div className="text-[10px] text-zinc-400">Native AtlasTexture resource</div>
-                  </div>
-                </button>
-
-                <div className="h-[1px] bg-zinc-800 my-1" />
-                <div className="px-2 py-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                  Raw Assets & Media
+              <button
+                onClick={handleExportJsonOnly}
+                disabled={!atlasResult}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-md flex items-center gap-2.5 text-zinc-200 transition"
+              >
+                <FileCode className="w-3.5 h-3.5 text-zinc-400" />
+                <div>
+                  <div className="font-medium text-xs">Phaser / PixiJS JSON</div>
+                  <div className="text-[10px] text-zinc-500">Hash format metadata</div>
                 </div>
+              </button>
 
-                <button
-                  onClick={handleExportFramesZip}
-                  disabled={frames.length === 0}
-                  className="w-full text-left px-2.5 py-2 hover:bg-zinc-800 disabled:opacity-30 rounded-lg flex items-center gap-2 text-zinc-200"
-                >
-                  <FileArchive className="w-4 h-4 text-cyan-400" />
-                  <div>
-                    <div className="font-medium">Individual Frames (ZIP)</div>
-                    <div className="text-[10px] text-zinc-400">Export frame_000.png series</div>
-                  </div>
-                </button>
+              <button
+                onClick={handleExportGodotOnly}
+                disabled={!atlasResult}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-md flex items-center gap-2.5 text-zinc-200 transition"
+              >
+                <FileCode className="w-3.5 h-3.5 text-zinc-400" />
+                <div>
+                  <div className="font-medium text-xs">Godot 4 Atlas (.tres)</div>
+                  <div className="text-[10px] text-zinc-500">AtlasTexture resource</div>
+                </div>
+              </button>
 
-                <button
-                  onClick={handleExportGif}
-                  disabled={frames.length === 0}
-                  className="w-full text-left px-2.5 py-2 hover:bg-zinc-800 disabled:opacity-30 rounded-lg flex items-center gap-2 text-zinc-200"
-                >
-                  <Sparkles className="w-4 h-4 text-purple-400" />
-                  <div>
-                    <div className="font-medium">Animated GIF Loop</div>
-                    <div className="text-[10px] text-zinc-400">Shareable animation file</div>
-                  </div>
-                </button>
-              </div>
-            )}
-          </div>
+              <div className="h-[1px] bg-[#292a34] my-1" />
+
+              <button
+                onClick={handleExportFramesZip}
+                disabled={frames.length === 0}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-md flex items-center gap-2.5 text-zinc-200 transition"
+              >
+                <FileArchive className="w-3.5 h-3.5 text-zinc-400" />
+                <div>
+                  <div className="font-medium text-xs">Individual Frames (ZIP)</div>
+                  <div className="text-[10px] text-zinc-500">Extracted frame_000.png</div>
+                </div>
+              </button>
+
+              <button
+                onClick={handleExportGif}
+                disabled={frames.length === 0}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-md flex items-center gap-2.5 text-zinc-200 transition"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <div>
+                  <div className="font-medium text-xs">Animated GIF</div>
+                  <div className="text-[10px] text-zinc-500">Preview animation loop</div>
+                </div>
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Non-Intrusive Export Progress Modal (Guaranteed Ad Exposure & User Feedback) */}
+      {/* Clean Slate Export Progress Modal */}
       {exportModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="w-96 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl flex flex-col items-center text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
+          <div className="w-80 bg-[#1c1d24] border border-[#2e303d] rounded-xl p-5 shadow-2xl flex flex-col items-center text-center">
             {exportModal.completed ? (
-              <CheckCircle2 className="w-10 h-10 text-emerald-400 animate-bounce mb-3" />
+              <CheckCircle2 className="w-8 h-8 text-emerald-400 mb-2.5" />
             ) : (
-              <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
+              <Loader2 className="w-8 h-8 text-blue-400 animate-spin mb-2.5" />
             )}
 
-            <h3 className="font-semibold text-zinc-100 text-sm">{exportModal.title}</h3>
-            <p className="text-xs text-zinc-400 mt-1 mb-4">
-              All computations are happening 100% locally in your browser.
-            </p>
+            <h3 className="font-medium text-zinc-200 text-xs">{exportModal.title}</h3>
+            <p className="text-[11px] text-zinc-500 mt-1 mb-3">Processing client-side...</p>
 
-            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden mb-2">
+            <div className="w-full bg-[#272833] rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-blue-500 to-emerald-400 h-full transition-all duration-300 rounded-full"
+                className="bg-blue-500 h-full transition-all duration-300 rounded-full"
                 style={{ width: `${exportModal.progress}%` }}
               />
             </div>
-            <span className="text-[11px] font-mono text-zinc-500">{exportModal.progress}%</span>
           </div>
         </div>
       )}

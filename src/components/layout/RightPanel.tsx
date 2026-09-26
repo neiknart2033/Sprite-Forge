@@ -2,16 +2,7 @@
 
 import React from 'react';
 import { useSpriteStore } from '@/store/useSpriteStore';
-import {
-  Sliders,
-  Maximize2,
-  Box,
-  Layers,
-  Sparkles,
-  Info,
-  ShieldCheck,
-  CheckCircle,
-} from 'lucide-react';
+import { Sliders, Box } from 'lucide-react';
 
 export function RightPanel() {
   const {
@@ -27,57 +18,54 @@ export function RightPanel() {
   } = useSpriteStore();
 
   return (
-    <aside className="w-80 border-l border-zinc-800 bg-zinc-950 flex flex-col h-full select-none z-20 overflow-y-auto">
-      {/* Panel Header */}
-      <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sliders className="w-4 h-4 text-blue-400" />
-          <span className="font-semibold text-xs uppercase tracking-wider text-zinc-200">
-            {appMode === 'unpack' ? 'Slicer Parameters' : 'Packer Parameters'}
-          </span>
-        </div>
+    <aside className="w-64 border-l border-[#25262e] bg-[#16171c] flex flex-col h-full select-none z-20 overflow-y-auto text-xs">
+      {/* Inspector Header */}
+      <div className="px-3.5 py-2.5 border-b border-[#25262e] flex items-center justify-between">
+        <span className="font-semibold text-[11px] text-zinc-300 uppercase tracking-wider">
+          {appMode === 'unpack' ? 'Slicer Inspector' : 'Packer Inspector'}
+        </span>
         <span className="text-[10px] text-zinc-500 font-mono">
-          {viewMode === 'artist' ? 'Artist View' : 'Dev View'}
+          {viewMode === 'artist' ? 'Artist' : 'Developer'}
         </span>
       </div>
 
-      <div className="p-4 space-y-5 text-xs text-zinc-300 flex-1">
+      <div className="p-3.5 space-y-4 flex-1">
         {/* ===================== UNPACK PARAMETERS ===================== */}
         {appMode === 'unpack' && (
           <>
-            {/* Slicing Method Selection */}
-            <div className="space-y-2">
-              <label className="text-[11px] font-medium text-zinc-400">Detection Method</label>
-              <div className="grid grid-cols-2 gap-1.5 p-1 bg-zinc-900 border border-zinc-800 rounded-lg">
+            {/* Detection Method */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-zinc-400 font-medium">Detection Method</label>
+              <div className="grid grid-cols-2 gap-1 p-0.5 bg-[#1f2027] border border-[#2b2d38] rounded-md">
                 <button
                   onClick={() => updateUnpackConfig({ mode: 'grid' })}
-                  className={`py-1.5 rounded text-xs font-medium transition ${
+                  className={`py-1 rounded text-[11px] font-medium transition ${
                     unpackConfig.mode === 'grid'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-[#2b2d39] text-zinc-100 shadow-xs'
+                      : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
-                  Uniform Grid
+                  Grid
                 </button>
                 <button
                   onClick={() => updateUnpackConfig({ mode: 'alpha' })}
-                  className={`py-1.5 rounded text-xs font-medium transition ${
+                  className={`py-1 rounded text-[11px] font-medium transition ${
                     unpackConfig.mode === 'alpha'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-[#2b2d39] text-zinc-100 shadow-xs'
+                      : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
-                  Alpha Auto-Detect
+                  Alpha
                 </button>
               </div>
             </div>
 
             {unpackConfig.mode === 'grid' ? (
-              <>
+              <div className="space-y-2.5">
                 {/* Frame Dimension */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[11px] text-zinc-400">Frame Width (px)</label>
+                    <label className="text-[10px] text-zinc-500">Width (W)</label>
                     <input
                       type="number"
                       min={1}
@@ -86,11 +74,11 @@ export function RightPanel() {
                       onChange={(e) =>
                         updateUnpackConfig({ frameWidth: Math.max(1, Number(e.target.value)) })
                       }
-                      className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 font-mono focus:border-blue-500 focus:outline-none"
+                      className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-zinc-400">Frame Height (px)</label>
+                    <label className="text-[10px] text-zinc-500">Height (H)</label>
                     <input
                       type="number"
                       min={1}
@@ -99,17 +87,17 @@ export function RightPanel() {
                       onChange={(e) =>
                         updateUnpackConfig({ frameHeight: Math.max(1, Number(e.target.value)) })
                       }
-                      className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 font-mono focus:border-blue-500 focus:outline-none"
+                      className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 </div>
 
-                {/* Spacing & Margins (Visible in Developer View) */}
+                {/* Spacing & Margins in Dev View */}
                 {viewMode === 'developer' && (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[11px] text-zinc-400">Spacing X (px)</label>
+                        <label className="text-[10px] text-zinc-500">Spacing X</label>
                         <input
                           type="number"
                           min={0}
@@ -117,11 +105,11 @@ export function RightPanel() {
                           onChange={(e) =>
                             updateUnpackConfig({ spacingX: Math.max(0, Number(e.target.value)) })
                           }
-                          className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 font-mono focus:border-blue-500 focus:outline-none"
+                          className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] text-zinc-400">Spacing Y (px)</label>
+                        <label className="text-[10px] text-zinc-500">Spacing Y</label>
                         <input
                           type="number"
                           min={0}
@@ -129,14 +117,14 @@ export function RightPanel() {
                           onChange={(e) =>
                             updateUnpackConfig({ spacingY: Math.max(0, Number(e.target.value)) })
                           }
-                          className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 font-mono focus:border-blue-500 focus:outline-none"
+                          className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[11px] text-zinc-400">Margin X (px)</label>
+                        <label className="text-[10px] text-zinc-500">Margin X</label>
                         <input
                           type="number"
                           min={0}
@@ -144,11 +132,11 @@ export function RightPanel() {
                           onChange={(e) =>
                             updateUnpackConfig({ marginX: Math.max(0, Number(e.target.value)) })
                           }
-                          className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 font-mono focus:border-blue-500 focus:outline-none"
+                          className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] text-zinc-400">Margin Y (px)</label>
+                        <label className="text-[10px] text-zinc-500">Margin Y</label>
                         <input
                           type="number"
                           min={0}
@@ -156,31 +144,30 @@ export function RightPanel() {
                           onChange={(e) =>
                             updateUnpackConfig({ marginY: Math.max(0, Number(e.target.value)) })
                           }
-                          className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 font-mono focus:border-blue-500 focus:outline-none"
+                          className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                         />
                       </div>
                     </div>
                   </>
                 )}
 
-                {/* Discard Empty Frames */}
+                {/* Discard Empty */}
                 <label className="flex items-center gap-2 cursor-pointer pt-1">
                   <input
                     type="checkbox"
                     checked={unpackConfig.discardEmpty}
                     onChange={(e) => updateUnpackConfig({ discardEmpty: e.target.checked })}
-                    className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-blue-600 focus:ring-0"
+                    className="w-3.5 h-3.5 rounded bg-[#1f2027] border-[#2b2d38] text-blue-500 focus:ring-0"
                   />
-                  <span className="text-xs text-zinc-300">Discard Transparent Frames</span>
+                  <span className="text-[11px] text-zinc-400">Ignore empty frames</span>
                 </label>
-              </>
+              </div>
             ) : (
-              <>
-                {/* Alpha Auto-Detect Settings */}
+              <div className="space-y-3">
                 <div>
                   <div className="flex justify-between text-[11px] text-zinc-400 mb-1">
-                    <span>Alpha Threshold</span>
-                    <span className="font-mono text-zinc-200">{unpackConfig.alphaThreshold} / 255</span>
+                    <span>Alpha Cutoff</span>
+                    <span className="font-mono text-zinc-300">{unpackConfig.alphaThreshold}</span>
                   </div>
                   <input
                     type="range"
@@ -188,12 +175,12 @@ export function RightPanel() {
                     max={255}
                     value={unpackConfig.alphaThreshold}
                     onChange={(e) => updateUnpackConfig({ alphaThreshold: Number(e.target.value) })}
-                    className="w-full accent-blue-500 bg-zinc-800 h-1.5 rounded"
+                    className="w-full accent-blue-500 bg-[#252632] h-1 rounded"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-zinc-400">Min Cluster Size (Pixels)</label>
+                  <label className="text-[10px] text-zinc-500">Min Cluster Size</label>
                   <input
                     type="number"
                     min={1}
@@ -201,20 +188,19 @@ export function RightPanel() {
                     onChange={(e) =>
                       updateUnpackConfig({ minPixelCount: Math.max(1, Number(e.target.value)) })
                     }
-                    className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 font-mono focus:border-blue-500 focus:outline-none"
+                    className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                   />
                 </div>
-              </>
+              </div>
             )}
           </>
         )}
 
         {/* ===================== PACK PARAMETERS ===================== */}
         {appMode === 'pack' && (
-          <>
-            {/* Algorithm Heuristic */}
+          <div className="space-y-3">
             <div>
-              <label className="text-[11px] text-zinc-400">Packing Algorithm</label>
+              <label className="text-[10px] text-zinc-500">Packing Method</label>
               <select
                 value={packConfig.algorithm}
                 onChange={(e) =>
@@ -222,18 +208,17 @@ export function RightPanel() {
                     algorithm: e.target.value as 'maxrects-bssf' | 'maxrects-baf' | 'binary-tree',
                   })
                 }
-                className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200 text-xs focus:border-blue-500 focus:outline-none"
+                className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 text-[11px] focus:outline-none focus:border-blue-500"
               >
-                <option value="maxrects-bssf">MaxRects (Best Short Side Fit)</option>
+                <option value="maxrects-bssf">MaxRects (Best Short Side)</option>
                 <option value="maxrects-baf">MaxRects (Best Area Fit)</option>
-                <option value="binary-tree">Binary Tree (Fast Preview)</option>
+                <option value="binary-tree">Binary Tree</option>
               </select>
             </div>
 
-            {/* Padding & Extrude */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[11px] text-zinc-400">Padding (px)</label>
+                <label className="text-[10px] text-zinc-500">Padding (px)</label>
                 <input
                   type="number"
                   min={0}
@@ -242,91 +227,69 @@ export function RightPanel() {
                   onChange={(e) =>
                     updatePackConfig({ padding: Math.max(0, Number(e.target.value)) })
                   }
-                  className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 font-mono focus:border-blue-500 focus:outline-none"
+                  className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-400" title="Edge pixel duplicate to prevent texture bleed">
-                  Extrude (1px)
-                </label>
+                <label className="text-[10px] text-zinc-500">Extrude</label>
                 <select
                   value={packConfig.extrude}
                   onChange={(e) => updatePackConfig({ extrude: Number(e.target.value) })}
-                  className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200 text-xs focus:border-blue-500 focus:outline-none"
+                  className="w-full mt-0.5 px-2 py-1 bg-[#1e1f26] border border-[#2b2d37] rounded text-zinc-200 text-[11px] focus:outline-none focus:border-blue-500"
                 >
-                  <option value={0}>0px (None)</option>
+                  <option value={0}>0px</option>
                   <option value={1}>1px (Bleed Guard)</option>
                 </select>
               </div>
             </div>
 
-            {/* Power of Two (POT) Lock */}
-            <div className="space-y-2 pt-1">
+            <div className="space-y-1.5 pt-1">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={packConfig.potLock}
                   onChange={(e) => updatePackConfig({ potLock: e.target.checked })}
-                  className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-blue-600 focus:ring-0"
+                  className="w-3.5 h-3.5 rounded bg-[#1f2027] border-[#2b2d38] text-blue-500 focus:ring-0"
                 />
-                <span className="text-xs text-zinc-300">Power-of-Two Lock (512, 1024, 2048)</span>
+                <span className="text-[11px] text-zinc-400">Power of Two (POT)</span>
               </label>
 
-              {/* Alpha Trimming */}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={packConfig.trimAlpha}
                   onChange={(e) => updatePackConfig({ trimAlpha: e.target.checked })}
-                  className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-blue-600 focus:ring-0"
+                  className="w-3.5 h-3.5 rounded bg-[#1f2027] border-[#2b2d38] text-blue-500 focus:ring-0"
                 />
-                <span className="text-xs text-zinc-300">Trim Transparent Pixels</span>
+                <span className="text-[11px] text-zinc-400">Trim Transparency</span>
               </label>
             </div>
-
-            {/* Sort Strategy */}
-            <div>
-              <label className="text-[11px] text-zinc-400">Sort Heuristic</label>
-              <select
-                value={packConfig.sortBy}
-                onChange={(e) =>
-                  updatePackConfig({
-                    sortBy: e.target.value as 'max-side' | 'area' | 'width' | 'height' | 'name',
-                  })
-                }
-                className="w-full mt-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200 text-xs focus:border-blue-500 focus:outline-none"
-              >
-                <option value="max-side">Max Dimension Descending</option>
-                <option value="area">Area Descending</option>
-                <option value="width">Width Descending</option>
-                <option value="height">Height Descending</option>
-                <option value="name">File Name</option>
-              </select>
-            </div>
-          </>
+          </div>
         )}
 
-        {/* Selected Frame Metrics */}
-        <div className="pt-2 border-t border-zinc-800 text-[11px] space-y-1.5 text-zinc-400">
+        {/* Stats Summary */}
+        <div className="pt-3 border-t border-[#25262e] text-[11px] space-y-1 text-zinc-400">
           <div className="flex justify-between">
-            <span>Total Frames:</span>
-            <span className="font-mono text-zinc-200">{frames.length}</span>
+            <span className="text-zinc-500">Frames:</span>
+            <span className="font-mono text-zinc-300">{frames.length}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Selected:</span>
-            <span className="font-mono text-blue-400">{selectedFrameIds.length}</span>
-          </div>
+          {selectedFrameIds.length > 0 && (
+            <div className="flex justify-between">
+              <span className="text-zinc-500">Selected:</span>
+              <span className="font-mono text-blue-400">{selectedFrameIds.length}</span>
+            </div>
+          )}
           {atlasResult && appMode === 'pack' && (
             <>
               <div className="flex justify-between">
-                <span>Atlas Size:</span>
-                <span className="font-mono text-zinc-200">
-                  {atlasResult.width} × {atlasResult.height}px
+                <span className="text-zinc-500">Atlas:</span>
+                <span className="font-mono text-zinc-300">
+                  {atlasResult.width}×{atlasResult.height}px
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Fill Efficiency:</span>
+                <span className="text-zinc-500">Fill Rate:</span>
                 <span className="font-mono text-emerald-400">
                   {Math.round(atlasResult.occupancyRate * 100)}%
                 </span>
@@ -336,16 +299,15 @@ export function RightPanel() {
         </div>
       </div>
 
-      {/* ===================== STICKY AD UNIT (MONETIZATION REQUIREMENT) ===================== */}
-      {/* Unit 2: Sticky Right Rail (300x250) positioned right below configuration sliders */}
-      <div className="p-3 border-t border-zinc-800 bg-zinc-900/60 flex flex-col items-center">
-        <div className="text-[10px] uppercase font-mono tracking-widest text-zinc-600 mb-1.5">
-          Advertisement
+      {/* Clean Discreet Ad Container */}
+      <div className="p-3 border-t border-[#25262e] bg-[#14151a] flex flex-col items-center">
+        <div className="text-[9px] uppercase font-mono tracking-wider text-zinc-600 mb-1">
+          Sponsor
         </div>
-        <div className="w-[280px] h-[220px] rounded-lg bg-zinc-900 border border-dashed border-zinc-700/80 flex flex-col items-center justify-center text-center p-3 text-zinc-500">
-          <Box className="w-8 h-8 text-zinc-600 mb-2 stroke-1" />
-          <span className="text-xs font-medium text-zinc-400">Google AdSense Unit (300×250)</span>
-          <span className="text-[10px] text-zinc-600 mt-1">High-Viewability Sticky Rail Placement</span>
+        <div className="w-full h-32 rounded bg-[#191a21] border border-[#262732] flex flex-col items-center justify-center text-center p-2 text-zinc-500">
+          <Box className="w-5 h-5 text-zinc-600 mb-1 stroke-1" />
+          <span className="text-[11px] text-zinc-400">AdSense Unit</span>
+          <span className="text-[9px] text-zinc-600">300×250</span>
         </div>
       </div>
     </aside>

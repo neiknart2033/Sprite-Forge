@@ -89,7 +89,6 @@ export function CanvasViewport() {
       const zoomFactor = e.deltaY < 0 ? 1.2 : 0.833;
       const newZoom = Math.min(32.0, Math.max(0.1, viewport.zoom * zoomFactor));
 
-      // Zoom centered at cursor
       const newPanX = cursorCanvasX - (cursorCanvasX - viewport.panX) * (newZoom / viewport.zoom);
       const newPanY = cursorCanvasY - (cursorCanvasY - viewport.panY) * (newZoom / viewport.zoom);
 
@@ -104,15 +103,13 @@ export function CanvasViewport() {
 
   // Mouse Down for Pan or Selection
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (e.button === 1 || isSpacePressed || e.button === 0 && e.altKey) {
-      // Middle click or Space + Left click or Alt + Left click: Pan
+    if (e.button === 1 || isSpacePressed || (e.button === 0 && e.altKey)) {
       setIsDragging(true);
       setDragStart({ x: e.clientX - viewport.panX, y: e.clientY - viewport.panY });
       return;
     }
 
     if (e.button === 0) {
-      // Left click: detect if clicked inside a frame bounding box
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
 
@@ -120,7 +117,6 @@ export function CanvasViewport() {
       const mouseY = (e.clientY - rect.top - viewport.panY) / viewport.zoom;
 
       if (appMode === 'unpack') {
-        // Find clicked frame
         const clicked = frames.find(
           (f) =>
             mouseX >= f.frame.x &&
@@ -148,7 +144,6 @@ export function CanvasViewport() {
         }
       }
 
-      // If clicked empty space, start panning
       setIsDragging(true);
       setDragStart({ x: e.clientX - viewport.panX, y: e.clientY - viewport.panY });
     }
@@ -184,7 +179,7 @@ export function CanvasViewport() {
     const targetH =
       appMode === 'unpack' ? sourceImage?.naturalHeight || 512 : atlasResult?.height || 512;
 
-    const padding = 40;
+    const padding = 48;
     const availableW = container.clientWidth - padding;
     const availableH = container.clientHeight - padding;
 
@@ -203,24 +198,25 @@ export function CanvasViewport() {
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    // Resize canvas to match display container
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Nearest-neighbor scaling for crisp pixel art!
     ctx.imageSmoothingEnabled = false;
 
-    // 1. Draw Checkerboard background
+    // 1. Soothing Low-Contrast Checkerboard (Charcoal palette)
     const { width: cw, height: ch } = canvas;
     ctx.clearRect(0, 0, cw, ch);
 
     const checkSize = 16;
     for (let y = 0; y < ch; y += checkSize) {
       for (let x = 0; x < cw; x += checkSize) {
-        ctx.fillStyle = (Math.floor(x / checkSize) + Math.floor(y / checkSize)) % 2 === 0 ? '#18181b' : '#27272a';
+        ctx.fillStyle =
+          (Math.floor(x / checkSize) + Math.floor(y / checkSize)) % 2 === 0
+            ? '#121317'
+            : '#18191f';
         ctx.fillRect(x, y, checkSize, checkSize);
       }
     }
@@ -231,12 +227,11 @@ export function CanvasViewport() {
     ctx.scale(viewport.zoom, viewport.zoom);
 
     if (appMode === 'unpack' && sourceImage) {
-      // Draw Source Spritesheet
       ctx.drawImage(sourceImage, 0, 0);
 
-      // Draw Grid Overlay if enabled
+      // Grid overlay
       if (viewport.showGrid && unpackConfig.mode === 'grid') {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
         ctx.lineWidth = 1 / viewport.zoom;
         const fw = unpackConfig.frameWidth;
         const fh = unpackConfig.frameHeight;
@@ -250,61 +245,58 @@ export function CanvasViewport() {
         }
       }
 
-      // Draw Bounding Boxes
+      // Bounding Boxes: crisp, delicate 1px borders
       if (viewport.showBBoxes) {
         frames.forEach((frame, idx) => {
           const isSelected = selectedFrameIds.includes(frame.id);
 
-          ctx.lineWidth = (isSelected ? 2 : 1) / viewport.zoom;
-          ctx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(56, 189, 248, 0.45)';
+          ctx.lineWidth = (isSelected ? 1.5 : 1) / viewport.zoom;
+          ctx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(150, 160, 180, 0.35)';
           ctx.strokeRect(frame.frame.x, frame.frame.y, frame.frame.w, frame.frame.h);
 
           if (isSelected) {
-            ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
             ctx.fillRect(frame.frame.x, frame.frame.y, frame.frame.w, frame.frame.h);
 
-            // Draw Pivot indicator
+            // Pivot indicator
             const pivotPx = frame.frame.x + frame.frame.w * frame.pivot.x;
             const pivotPy = frame.frame.y + frame.frame.h * frame.pivot.y;
             ctx.strokeStyle = '#f43f5e';
-            ctx.lineWidth = 1.5 / viewport.zoom;
+            ctx.lineWidth = 1.2 / viewport.zoom;
             ctx.beginPath();
-            ctx.arc(pivotPx, pivotPy, 4 / viewport.zoom, 0, Math.PI * 2);
+            ctx.arc(pivotPx, pivotPy, 3.5 / viewport.zoom, 0, Math.PI * 2);
             ctx.stroke();
           }
 
-          // Frame index label
-          if (viewport.zoom >= 0.8) {
-            ctx.fillStyle = isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.8)';
-            ctx.font = `${Math.max(9, Math.floor(10 / viewport.zoom))}px monospace`;
+          if (viewport.zoom >= 0.9) {
+            ctx.fillStyle = isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.5)';
+            ctx.font = `${Math.max(9, Math.floor(9 / viewport.zoom))}px monospace`;
             ctx.fillText(
               `#${idx}`,
               frame.frame.x + 2 / viewport.zoom,
-              frame.frame.y + 10 / viewport.zoom
+              frame.frame.y + 9 / viewport.zoom
             );
           }
         });
       }
     } else if (appMode === 'pack' && atlasResult) {
-      // Draw Packed Texture Atlas
       ctx.drawImage(atlasResult.canvas, 0, 0);
 
-      // Atlas outer border
-      ctx.strokeStyle = '#eab308';
+      // Atlas border
+      ctx.strokeStyle = 'rgba(234, 179, 8, 0.5)';
       ctx.lineWidth = 1 / viewport.zoom;
       ctx.strokeRect(0, 0, atlasResult.width, atlasResult.height);
 
-      // Draw Bounding Boxes in Atlas
       if (viewport.showBBoxes) {
         atlasResult.frames.forEach((pf) => {
           const isSelected = selectedFrameIds.includes(pf.id);
 
-          ctx.lineWidth = (isSelected ? 2 : 1) / viewport.zoom;
-          ctx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(16, 185, 129, 0.45)';
+          ctx.lineWidth = (isSelected ? 1.5 : 1) / viewport.zoom;
+          ctx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(52, 211, 153, 0.35)';
           ctx.strokeRect(pf.packedX, pf.packedY, pf.packedW, pf.packedH);
 
           if (isSelected) {
-            ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
             ctx.fillRect(pf.packedX, pf.packedY, pf.packedW, pf.packedH);
           }
         });
@@ -322,7 +314,9 @@ export function CanvasViewport() {
     unpackConfig,
   ]);
 
-  const hasContent = Boolean(sourceImage || (atlasResult && atlasResult.frames.length > 0) || frames.length > 0);
+  const hasContent = Boolean(
+    sourceImage || (atlasResult && atlasResult.frames.length > 0) || frames.length > 0
+  );
 
   return (
     <div
@@ -333,7 +327,7 @@ export function CanvasViewport() {
       }}
       onDragLeave={() => setIsDragOver(false)}
       onDrop={handleDrop}
-      className={`relative w-full h-full overflow-hidden select-none bg-zinc-950 ${
+      className={`relative w-full h-full overflow-hidden select-none bg-[#121316] ${
         isSpacePressed || isDragging ? 'cursor-grab active:cursor-grabbing' : 'cursor-crosshair'
       }`}
     >
@@ -347,122 +341,122 @@ export function CanvasViewport() {
         className="w-full h-full block"
       />
 
-      {/* Empty State Overlay */}
+      {/* Clean Slate Empty State Card */}
       {!hasContent && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-zinc-950/70 backdrop-blur-xs pointer-events-none">
-          <div className="max-w-md w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 text-center shadow-2xl pointer-events-auto space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 mx-auto flex items-center justify-center">
-              <Upload className="w-6 h-6" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 pointer-events-none">
+          <div className="max-w-xs w-full bg-[#181920] border border-[#272833] rounded-xl p-6 text-center shadow-xl pointer-events-auto space-y-4">
+            <div className="w-10 h-10 rounded-lg bg-[#22242e] border border-[#2f313f] text-zinc-300 mx-auto flex items-center justify-center">
+              <Upload className="w-4 h-4 text-zinc-400" />
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-white">Drop Sprite Sheet or Images</h3>
-              <p className="text-xs text-zinc-400 mt-1">
-                Drag and drop your composite sprite sheet or individual frame PNGs anywhere on this
-                canvas.
+              <h3 className="text-xs font-semibold text-zinc-100">Drop Images Here</h3>
+              <p className="text-[11px] text-zinc-500 mt-1">
+                Drag sprite sheet or PNG frames to slice and pack
               </p>
             </div>
 
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
+            <div className="pt-1">
               <button
                 onClick={handleLoadSample}
-                className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition"
+                className="w-full py-1.5 px-3 bg-[#242735] hover:bg-[#2b2e40] border border-[#35384a] text-zinc-200 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition"
               >
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>Try Demo Pixel Knight</span>
+                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                <span>Load Sample Knight</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Drag Over Visual Indicator */}
+      {/* Drag Over Overlay */}
       {isDragOver && (
-        <div className="absolute inset-0 border-4 border-dashed border-blue-500 bg-blue-500/10 pointer-events-none flex items-center justify-center z-40 animate-pulse">
-          <div className="bg-blue-600 text-white font-bold text-sm px-6 py-3 rounded-2xl shadow-2xl">
-            Drop your image files to process!
+        <div className="absolute inset-0 border-2 border-dashed border-blue-500 bg-blue-500/5 pointer-events-none flex items-center justify-center z-40">
+          <div className="bg-[#1e202b] border border-blue-500/40 text-blue-400 font-medium text-xs px-4 py-2 rounded-lg shadow-xl">
+            Drop file to open
           </div>
         </div>
       )}
 
-      {/* Floating Viewport Controls */}
-      <div className="absolute bottom-4 left-4 flex items-center gap-1.5 bg-zinc-900/90 backdrop-blur border border-zinc-800 rounded-lg p-1.5 shadow-lg text-zinc-300 text-xs">
+      {/* Minimal Floating Viewport Pill HUD */}
+      <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-[#1a1b22]/90 backdrop-blur-md border border-[#292a35] rounded-lg p-1 text-zinc-400 text-xs shadow-md">
         <button
           onClick={() =>
             setViewport({ zoom: Math.min(32.0, Math.round(viewport.zoom * 1.25 * 10) / 10) })
           }
-          className="p-1.5 hover:bg-zinc-800 rounded text-zinc-300 hover:text-white transition"
+          className="p-1 hover:bg-[#252632] hover:text-zinc-200 rounded transition"
           title="Zoom In"
         >
-          <ZoomIn className="w-4 h-4" />
+          <ZoomIn className="w-3.5 h-3.5" />
         </button>
-        <span className="font-mono px-1 min-w-[44px] text-center font-medium">
+
+        <span className="font-mono px-1 min-w-[38px] text-center text-[11px] text-zinc-300">
           {Math.round(viewport.zoom * 100)}%
         </span>
+
         <button
           onClick={() =>
             setViewport({ zoom: Math.max(0.1, Math.round((viewport.zoom / 1.25) * 10) / 10) })
           }
-          className="p-1.5 hover:bg-zinc-800 rounded text-zinc-300 hover:text-white transition"
+          className="p-1 hover:bg-[#252632] hover:text-zinc-200 rounded transition"
           title="Zoom Out"
         >
-          <ZoomOut className="w-4 h-4" />
+          <ZoomOut className="w-3.5 h-3.5" />
         </button>
 
-        <div className="w-[1px] h-4 bg-zinc-700 mx-1" />
+        <div className="w-[1px] h-3.5 bg-[#2a2b37] mx-0.5" />
 
         <button
           onClick={fitToScreen}
-          className="p-1.5 hover:bg-zinc-800 rounded text-zinc-300 hover:text-white transition"
+          className="p-1 hover:bg-[#252632] hover:text-zinc-200 rounded transition"
           title="Fit to Screen"
         >
-          <Maximize className="w-4 h-4" />
+          <Maximize className="w-3.5 h-3.5" />
         </button>
 
         <button
           onClick={() => setViewport({ showGrid: !viewport.showGrid })}
-          className={`p-1.5 rounded transition ${
+          className={`p-1 rounded transition ${
             viewport.showGrid
-              ? 'bg-blue-600/30 text-blue-400 border border-blue-500/40'
-              : 'hover:bg-zinc-800 text-zinc-400'
+              ? 'bg-[#272938] text-blue-400'
+              : 'hover:bg-[#252632] text-zinc-400 hover:text-zinc-200'
           }`}
           title="Toggle Grid"
         >
-          <Grid className="w-4 h-4" />
+          <Grid className="w-3.5 h-3.5" />
         </button>
 
         <button
           onClick={() => setViewport({ showBBoxes: !viewport.showBBoxes })}
-          className={`p-1.5 rounded transition ${
+          className={`p-1 rounded transition ${
             viewport.showBBoxes
-              ? 'bg-blue-600/30 text-blue-400 border border-blue-500/40'
-              : 'hover:bg-zinc-800 text-zinc-400'
+              ? 'bg-[#272938] text-blue-400'
+              : 'hover:bg-[#252632] text-zinc-400 hover:text-zinc-200'
           }`}
           title="Toggle Bounding Boxes"
         >
-          <Eye className="w-4 h-4" />
+          <Eye className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Mouse Coordinates & Canvas Size Info */}
-      <div className="absolute bottom-4 right-4 flex items-center gap-3 bg-zinc-900/90 backdrop-blur border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-400 text-xs font-mono">
+      {/* Discreet Coordinate & Dimension Info */}
+      <div className="absolute bottom-3 right-3 flex items-center gap-2.5 bg-[#1a1b22]/90 backdrop-blur-md border border-[#292a35] rounded-lg px-2.5 py-1 text-zinc-400 text-[11px] font-mono shadow-md">
         <div>
-          X: <span className="text-zinc-200">{mousePos.x}</span>, Y:{' '}
-          <span className="text-zinc-200">{mousePos.y}</span>
+          {mousePos.x}, {mousePos.y}
         </div>
-        <div className="w-[1px] h-3.5 bg-zinc-800" />
+        <div className="w-[1px] h-3 bg-[#2a2b37]" />
         <div>
           {appMode === 'unpack' && sourceImage ? (
             <span>
-              Image: {sourceImage.naturalWidth} × {sourceImage.naturalHeight}px
+              {sourceImage.naturalWidth}×{sourceImage.naturalHeight}px
             </span>
           ) : appMode === 'pack' && atlasResult ? (
             <span>
-              Atlas: {atlasResult.width} × {atlasResult.height}px (
-              {Math.round(atlasResult.occupancyRate * 100)}% fill)
+              {atlasResult.width}×{atlasResult.height}px (
+              {Math.round(atlasResult.occupancyRate * 100)}%)
             </span>
           ) : (
-            <span>No asset loaded</span>
+            <span className="text-zinc-500">Ready</span>
           )}
         </div>
       </div>

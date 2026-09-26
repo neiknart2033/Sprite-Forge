@@ -11,31 +11,31 @@ import { SeoDocumentation } from '@/components/content/SeoDocumentation';
 
 export default function SpriteForgePage() {
   return (
-    <main className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen flex flex-col bg-[#121316] text-zinc-100 selection:bg-blue-500/30 selection:text-white">
       {/* 1. Global Navigation Header */}
       <Header />
 
-      {/* 2. Top Leaderboard Banner (AdSense Placement Unit 1) */}
+      {/* 2. Top Banner (Subtle & Collapsible) */}
       <LeaderboardAd />
 
-      {/* 3. Core Interactive Workspace */}
-      <div className="flex flex-1 h-[calc(100vh-140px)] min-h-[640px] border-b border-zinc-800">
-        {/* Left Action Toolbar */}
+      {/* 3. Clean Studio Workspace */}
+      <div className="flex flex-1 h-[calc(100vh-100px)] min-h-[560px] border-b border-[#25262e]">
+        {/* Minimal Left Toolbar */}
         <LeftToolbar />
 
         {/* Center Canvas Viewport & Bottom Animation Timeline */}
-        <div className="flex-1 flex flex-col min-w-0 bg-zinc-950 relative overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 bg-[#121316] relative overflow-hidden">
           <div className="flex-1 relative overflow-hidden">
             <CanvasViewport />
           </div>
           <AnimationPreview />
         </div>
 
-        {/* Right Configuration & Metric Panel with Sticky Ad */}
+        {/* Right Inspector Panel */}
         <RightPanel />
       </div>
 
-      {/* 4. Below-the-Fold SEO Landing Zone & Technical Documentation */}
+      {/* 4. Below-the-Fold SEO Landing Zone */}
       <SeoDocumentation />
     </main>
   );

@@ -11,6 +11,7 @@ import {
   SkipBack,
   SkipForward,
   ChevronDown,
+  ChevronUp,
   Sparkles,
 } from 'lucide-react';
 import { generateAndDownloadGif } from '@/lib/export/exporter';
@@ -22,9 +23,9 @@ export function AnimationPreview() {
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [activeFrameIdx, setActiveFrameIdx] = useState(0);
   const [isExportingGif, setIsExportingGif] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const directionRef = useRef<1 | -1>(1);
 
-  // Use selected frames or all frames for animation
   const animFrames =
     selectedFrameIds.length > 1
       ? frames.filter((f) => selectedFrameIds.includes(f.id))
@@ -56,7 +57,7 @@ export function AnimationPreview() {
     return () => clearInterval(timer);
   }, [animationConfig.isPlaying, animationConfig.fps, animationConfig.pingPong, animFrames.length]);
 
-  // Render current frame on preview canvas
+  // Render current frame
   useEffect(() => {
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -66,12 +67,14 @@ export function AnimationPreview() {
 
     ctx.imageSmoothingEnabled = false;
 
-    // Clear and draw small checkerboard
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const checkSize = 8;
     for (let y = 0; y < canvas.height; y += checkSize) {
       for (let x = 0; x < canvas.width; x += checkSize) {
-        ctx.fillStyle = (Math.floor(x / checkSize) + Math.floor(y / checkSize)) % 2 === 0 ? '#1f1f23' : '#2d2d33';
+        ctx.fillStyle =
+          (Math.floor(x / checkSize) + Math.floor(y / checkSize)) % 2 === 0
+            ? '#16171d'
+            : '#1e1f26';
         ctx.fillRect(x, y, checkSize, checkSize);
       }
     }
@@ -80,7 +83,6 @@ export function AnimationPreview() {
     const currentFrame = animFrames[activeFrameIdx] || animFrames[0];
     if (!currentFrame || !currentFrame.canvas) return;
 
-    // Draw scaled & centered
     const scale = animationConfig.zoom;
     const fw = currentFrame.canvas.width * scale;
     const fh = currentFrame.canvas.height * scale;
@@ -89,7 +91,7 @@ export function AnimationPreview() {
     const drawY = Math.round((canvas.height - fh) / 2);
 
     ctx.drawImage(currentFrame.canvas, drawX, drawY, fw, fh);
-  }, [animFrames, activeFrameIdx, animationConfig.zoom]);
+  }, [animFrames, activeFrameIdx, animationConfig.zoom, isExpanded]);
 
   const handleExportGif = async () => {
     if (animFrames.length === 0) return;
@@ -108,21 +110,41 @@ export function AnimationPreview() {
   };
 
   return (
-    <div className="border-t border-zinc-800 bg-zinc-900/95 backdrop-blur flex flex-col h-48 select-none">
-      {/* Animation Controls Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-800 text-xs">
-        <div className="flex items-center gap-2">
-          <Film className="w-3.5 h-3.5 text-blue-400" />
-          <span className="font-semibold text-zinc-200">Animation Timeline</span>
-          <span className="text-zinc-500">
-            ({animFrames.length} {animFrames.length === 1 ? 'frame' : 'frames'})
+    <div className="border-t border-[#25262e] bg-[#16171c] flex flex-col select-none transition-all duration-200">
+      {/* Sleek Collapsible Bar */}
+      <div className="flex items-center justify-between px-3 h-8 border-b border-[#25262e] text-xs">
+        <div
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-2 cursor-pointer hover:text-zinc-200 text-zinc-400 transition"
+        >
+          {isExpanded ? (
+            <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+          ) : (
+            <ChevronUp className="w-3.5 h-3.5 text-zinc-500" />
+          )}
+          <span className="font-medium text-xs text-zinc-300">Timeline Preview</span>
+          <span className="text-[11px] text-zinc-500 font-mono">
+            {animFrames.length} {animFrames.length === 1 ? 'frame' : 'frames'}
           </span>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* FPS Selector */}
-          <div className="flex items-center gap-1.5 text-zinc-300">
-            <span className="text-zinc-400">FPS:</span>
+          {/* Quick Play/Pause on bar */}
+          <button
+            onClick={() => updateAnimationConfig({ isPlaying: !animationConfig.isPlaying })}
+            className="p-1 hover:bg-[#252733] text-zinc-300 rounded transition"
+            title={animationConfig.isPlaying ? 'Pause' : 'Play'}
+          >
+            {animationConfig.isPlaying ? (
+              <Pause className="w-3 h-3 text-blue-400" />
+            ) : (
+              <Play className="w-3 h-3 text-zinc-300" />
+            )}
+          </button>
+
+          {/* Quick FPS input */}
+          <div className="flex items-center gap-1 text-[11px] text-zinc-400">
+            <span>FPS:</span>
             <input
               type="number"
               min={1}
@@ -131,134 +153,114 @@ export function AnimationPreview() {
               onChange={(e) =>
                 updateAnimationConfig({ fps: Math.max(1, Math.min(60, Number(e.target.value))) })
               }
-              className="w-12 px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-center font-mono text-zinc-100 focus:outline-none focus:border-blue-500"
+              className="w-10 px-1 py-0.5 bg-[#1e1f26] border border-[#2b2d38] rounded text-center font-mono text-zinc-200 focus:outline-none focus:border-blue-500 text-[11px]"
             />
-          </div>
-
-          {/* Zoom Selector */}
-          <div className="flex items-center gap-1 text-zinc-300">
-            <span className="text-zinc-400">Zoom:</span>
-            <select
-              value={animationConfig.zoom}
-              onChange={(e) => updateAnimationConfig({ zoom: Number(e.target.value) })}
-              className="bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs rounded px-1.5 py-0.5"
-            >
-              <option value={1}>1×</option>
-              <option value={2}>2×</option>
-              <option value={3}>3×</option>
-              <option value={4}>4×</option>
-            </select>
           </div>
 
           {/* Ping-pong toggle */}
           <button
             onClick={() => updateAnimationConfig({ pingPong: !animationConfig.pingPong })}
-            className={`px-2 py-0.5 rounded text-xs transition flex items-center gap-1 ${
+            className={`px-1.5 py-0.5 rounded text-[11px] transition flex items-center gap-1 ${
               animationConfig.pingPong
-                ? 'bg-blue-600/30 text-blue-400 border border-blue-500/40'
-                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#272938] text-blue-400'
+                : 'text-zinc-500 hover:text-zinc-300'
             }`}
-            title="Ping-Pong Animation Mode"
+            title="Ping-Pong Mode"
           >
-            <Repeat className="w-3 h-3" />
-            Ping-Pong
+            <Repeat className="w-2.5 h-2.5" />
+            <span>Ping-Pong</span>
           </button>
 
           {/* Export GIF */}
           <button
             onClick={handleExportGif}
             disabled={isExportingGif || animFrames.length === 0}
-            className="flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white rounded font-medium transition text-xs shadow"
-            title="Export loop as Animated GIF"
+            className="flex items-center gap-1 px-2 py-0.5 bg-[#232634] hover:bg-[#2b2e40] border border-[#35384a] text-zinc-300 hover:text-white rounded text-[11px] transition disabled:opacity-40"
+            title="Export GIF"
           >
-            <Sparkles className="w-3 h-3" />
-            {isExportingGif ? 'Exporting...' : 'Export GIF'}
+            <Sparkles className="w-3 h-3 text-blue-400" />
+            <span>{isExportingGif ? 'Encoding...' : 'GIF'}</span>
           </button>
         </div>
       </div>
 
-      {/* Main Preview Body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Playback Preview Box */}
-        <div className="w-44 flex flex-col items-center justify-center p-2 border-r border-zinc-800 bg-zinc-950/60">
-          <canvas
-            ref={previewCanvasRef}
-            width={128}
-            height={100}
-            className="border border-zinc-800 rounded shadow-inner"
-          />
+      {/* Expanded Track & Preview Canvas */}
+      {isExpanded && (
+        <div className="flex h-36 overflow-hidden">
+          {/* Playback Box */}
+          <div className="w-36 flex flex-col items-center justify-center p-2 border-r border-[#25262e] bg-[#131418]">
+            <canvas
+              ref={previewCanvasRef}
+              width={96}
+              height={80}
+              className="border border-[#262731] rounded"
+            />
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={() =>
+                  setActiveFrameIdx((prev) => (prev > 0 ? prev - 1 : animFrames.length - 1))
+                }
+                className="p-0.5 text-zinc-500 hover:text-zinc-300"
+              >
+                <SkipBack className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => updateAnimationConfig({ isPlaying: !animationConfig.isPlaying })}
+                className="p-1 bg-[#252733] hover:bg-[#2f3140] text-zinc-200 rounded-full transition"
+              >
+                {animationConfig.isPlaying ? (
+                  <Pause className="w-3 h-3" />
+                ) : (
+                  <Play className="w-3 h-3 ml-0.5" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveFrameIdx((prev) => (prev + 1) % animFrames.length)}
+                className="p-0.5 text-zinc-500 hover:text-zinc-300"
+              >
+                <SkipForward className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
 
-          {/* Playback Buttons */}
-          <div className="flex items-center gap-2 mt-2">
-            <button
-              onClick={() => setActiveFrameIdx((prev) => (prev > 0 ? prev - 1 : animFrames.length - 1))}
-              className="p-1 text-zinc-400 hover:text-zinc-200"
-              title="Previous Frame"
-            >
-              <SkipBack className="w-3.5 h-3.5" />
-            </button>
-
-            <button
-              onClick={() => updateAnimationConfig({ isPlaying: !animationConfig.isPlaying })}
-              className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition shadow"
-              title={animationConfig.isPlaying ? 'Pause' : 'Play'}
-            >
-              {animationConfig.isPlaying ? (
-                <Pause className="w-3.5 h-3.5" />
-              ) : (
-                <Play className="w-3.5 h-3.5 ml-0.5" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveFrameIdx((prev) => (prev + 1) % animFrames.length)}
-              className="p-1 text-zinc-400 hover:text-zinc-200"
-              title="Next Frame"
-            >
-              <SkipForward className="w-3.5 h-3.5" />
-            </button>
+          {/* Frames Track */}
+          <div className="flex-1 overflow-x-auto p-2 flex items-center gap-2">
+            {animFrames.length === 0 ? (
+              <div className="w-full text-center text-zinc-600 text-xs py-6">
+                No frames loaded yet.
+              </div>
+            ) : (
+              animFrames.map((frame, index) => {
+                const isActive = index === activeFrameIdx;
+                return (
+                  <div
+                    key={frame.id}
+                    onClick={() => setActiveFrameIdx(index)}
+                    className={`flex-shrink-0 cursor-pointer flex flex-col items-center p-1 rounded transition border ${
+                      isActive
+                        ? 'border-blue-500/70 bg-[#242735]'
+                        : 'border-[#262732] bg-[#181920] hover:border-[#383a48]'
+                    }`}
+                  >
+                    <div className="w-12 h-12 bg-[#121316] rounded flex items-center justify-center overflow-hidden">
+                      {frame.dataUrl ? (
+                        <img
+                          src={frame.dataUrl}
+                          alt={frame.name}
+                          className="max-w-full max-h-full object-contain [image-rendering:pixelated]"
+                        />
+                      ) : (
+                        <span className="text-[9px] text-zinc-600">#{index}</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-mono text-zinc-500 mt-1">{index + 1}</span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
-
-        {/* Frames Track Scrubber */}
-        <div className="flex-1 overflow-x-auto p-2 flex items-center gap-2">
-          {animFrames.length === 0 ? (
-            <div className="w-full text-center text-zinc-500 text-xs py-8">
-              No frames extracted yet. Upload a sprite sheet or image frames to preview animations.
-            </div>
-          ) : (
-            animFrames.map((frame, index) => {
-              const isActive = index === activeFrameIdx;
-              return (
-                <div
-                  key={frame.id}
-                  onClick={() => setActiveFrameIdx(index)}
-                  className={`flex-shrink-0 cursor-pointer flex flex-col items-center p-1 rounded border transition ${
-                    isActive
-                      ? 'border-blue-500 bg-blue-500/10 shadow-sm'
-                      : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
-                  }`}
-                >
-                  <div className="w-14 h-14 bg-zinc-950 rounded flex items-center justify-center overflow-hidden">
-                    {frame.dataUrl ? (
-                      <img
-                        src={frame.dataUrl}
-                        alt={frame.name}
-                        className="max-w-full max-h-full object-contain [image-rendering:pixelated]"
-                      />
-                    ) : (
-                      <div className="text-[10px] text-zinc-600">#{index}</div>
-                    )}
-                  </div>
-                  <span className="text-[10px] font-mono text-zinc-400 mt-1 truncate max-w-[60px]">
-                    {index + 1}
-                  </span>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
