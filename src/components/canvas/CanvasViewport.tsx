@@ -8,6 +8,7 @@ import { generateSampleSpriteSheet } from '@/lib/sampleAsset';
 export function CanvasViewport() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const coordRef = useRef<HTMLSpanElement | null>(null);
 
   const {
     appMode,
@@ -25,11 +26,22 @@ export function CanvasViewport() {
     runPack,
   } = useSpriteStore();
 
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isSpacePressed, setIsSpacePressed] = useState(false);
-  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragOver, setIsDragOver] = useState(false);
+
+  // Mutable refs for silky smooth 60-120 FPS dragging without React state updates
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const panRef = useRef({ x: viewport.panX, y: viewport.panY });
+  const zoomRef = useRef(viewport.zoom);
+  const animFrameIdRef = useRef<number | null>(null);
+
+  // Keep refs in sync with store viewport
+  useEffect(() => {
+    panRef.current = { x: viewport.panX, y: viewport.panY };
+    zoomRef.current = viewport.zoom;
+    requestRender();
+  }, [viewport.panX, viewport.panY, viewport.zoom]);
 
   const handleLoadSample = async () => {
     const sampleCanvas = generateSampleSpriteSheet();
@@ -56,7 +68,7 @@ export function CanvasViewport() {
     }
   };
 
-  // Handle Space key for panning cursor
+  // Keyboard shortcut for Space pan
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !e.repeat && (e.target as HTMLElement).tagName !== 'INPUT') {
@@ -78,7 +90,149 @@ export function CanvasViewport() {
     };
   }, []);
 
-  // Handle Wheel Zoom anchored at mouse position
+  // High Performance 60 FPS Render Function
+  const renderCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.imageSmoothingEnabled = false;
+
+    // 1. Instant GPU clear (background handled by CSS .canvas-checkerboard)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Viewport Transform
+    ctx.save();
+    ctx.translate(panRef.current.x, panRef.current.y);
+    ctx.scale(zoomRef.current, zoomRef.current);
+
+    const curZoom = zoomRef.current;
+
+    if (appMode === 'unpack' && sourceImage) {
+      ctx.drawImage(sourceImage, 0, 0);
+
+      // Grid overlay
+      if (viewport.showGrid && unpackConfig.mode === 'grid') {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.lineWidth = 1 / curZoom;
+        const fw = unpackConfig.frameWidth;
+        const fh = unpackConfig.frameHeight;
+        const sx = unpackConfig.spacingX;
+        const sy = unpackConfig.spacingY;
+
+        for (let y = unpackConfig.marginY; y + fh <= sourceImage.naturalHeight; y += fh + sy) {
+          for (let x = unpackConfig.marginX; x + fw <= sourceImage.naturalWidth; x += fw + sx) {
+            ctx.strokeRect(x, y, fw, fh);
+          }
+        }
+      }
+
+      // Bounding Boxes: thin crisp 1px strokes
+      if (viewport.showBBoxes) {
+        frames.forEach((frame, idx) => {
+          const isSelected = selectedFrameIds.includes(frame.id);
+
+          ctx.lineWidth = (isSelected ? 1.5 : 1) / curZoom;
+          ctx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(150, 160, 180, 0.35)';
+          ctx.strokeRect(frame.frame.x, frame.frame.y, frame.frame.w, frame.frame.h);
+
+          if (isSelected) {
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+            ctx.fillRect(frame.frame.x, frame.frame.y, frame.frame.w, frame.frame.h);
+
+            // Pivot indicator
+            const pivotPx = frame.frame.x + frame.frame.w * frame.pivot.x;
+            const pivotPy = frame.frame.y + frame.frame.h * frame.pivot.y;
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 1.2 / curZoom;
+            ctx.beginPath();
+            ctx.arc(pivotPx, pivotPy, 3.5 / curZoom, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          if (curZoom >= 0.9) {
+            ctx.fillStyle = isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.5)';
+            ctx.font = `${Math.max(9, Math.floor(9 / curZoom))}px monospace`;
+            ctx.fillText(
+              `#${idx}`,
+              frame.frame.x + 2 / curZoom,
+              frame.frame.y + 9 / curZoom
+            );
+          }
+        });
+      }
+    } else if (appMode === 'pack' && atlasResult) {
+      ctx.drawImage(atlasResult.canvas, 0, 0);
+
+      ctx.strokeStyle = 'rgba(234, 179, 8, 0.5)';
+      ctx.lineWidth = 1 / curZoom;
+      ctx.strokeRect(0, 0, atlasResult.width, atlasResult.height);
+
+      if (viewport.showBBoxes) {
+        atlasResult.frames.forEach((pf) => {
+          const isSelected = selectedFrameIds.includes(pf.id);
+
+          ctx.lineWidth = (isSelected ? 1.5 : 1) / curZoom;
+          ctx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(52, 211, 153, 0.35)';
+          ctx.strokeRect(pf.packedX, pf.packedY, pf.packedW, pf.packedH);
+
+          if (isSelected) {
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+            ctx.fillRect(pf.packedX, pf.packedY, pf.packedW, pf.packedH);
+          }
+        });
+      }
+    }
+
+    ctx.restore();
+  }, [
+    appMode,
+    sourceImage,
+    atlasResult,
+    frames,
+    selectedFrameIds,
+    viewport.showGrid,
+    viewport.showBBoxes,
+    unpackConfig,
+  ]);
+
+  const requestRender = useCallback(() => {
+    if (animFrameIdRef.current !== null) return;
+    animFrameIdRef.current = requestAnimationFrame(() => {
+      animFrameIdRef.current = null;
+      renderCanvas();
+    });
+  }, [renderCanvas]);
+
+  // Handle Resize using ResizeObserver (never resize inside render)
+  useEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0 && (canvas.width !== width || canvas.height !== height)) {
+          canvas.width = width;
+          canvas.height = height;
+          requestRender();
+        }
+      }
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [requestRender]);
+
+  // Re-render when content changes
+  useEffect(() => {
+    requestRender();
+  }, [sourceImage, atlasResult, frames, selectedFrameIds, unpackConfig, requestRender]);
+
+  // Wheel Zoom
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLCanvasElement>) => {
       e.preventDefault();
@@ -88,26 +242,31 @@ export function CanvasViewport() {
       const cursorCanvasX = e.clientX - rect.left;
       const cursorCanvasY = e.clientY - rect.top;
 
-      const zoomFactor = e.deltaY < 0 ? 1.2 : 0.833;
-      const newZoom = Math.min(32.0, Math.max(0.1, viewport.zoom * zoomFactor));
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.869;
+      const newZoom = Math.min(32.0, Math.max(0.1, zoomRef.current * zoomFactor));
 
-      const newPanX = cursorCanvasX - (cursorCanvasX - viewport.panX) * (newZoom / viewport.zoom);
-      const newPanY = cursorCanvasY - (cursorCanvasY - viewport.panY) * (newZoom / viewport.zoom);
+      const newPanX = cursorCanvasX - (cursorCanvasX - panRef.current.x) * (newZoom / zoomRef.current);
+      const newPanY = cursorCanvasY - (cursorCanvasY - panRef.current.y) * (newZoom / zoomRef.current);
+
+      panRef.current = { x: newPanX, y: newPanY };
+      zoomRef.current = newZoom;
 
       setViewport({
         zoom: newZoom,
         panX: newPanX,
         panY: newPanY,
       });
+
+      requestRender();
     },
-    [viewport, setViewport]
+    [setViewport, requestRender]
   );
 
-  // Mouse Down for Pan or Selection
+  // Mouse Down
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (e.button === 1 || isSpacePressed || (e.button === 0 && e.altKey)) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - viewport.panX, y: e.clientY - viewport.panY });
+      isDraggingRef.current = true;
+      dragStartRef.current = { x: e.clientX - panRef.current.x, y: e.clientY - panRef.current.y };
       return;
     }
 
@@ -115,8 +274,8 @@ export function CanvasViewport() {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
 
-      const mouseX = (e.clientX - rect.left - viewport.panX) / viewport.zoom;
-      const mouseY = (e.clientY - rect.top - viewport.panY) / viewport.zoom;
+      const mouseX = (e.clientX - rect.left - panRef.current.x) / zoomRef.current;
+      const mouseY = (e.clientY - rect.top - panRef.current.y) / zoomRef.current;
 
       if (appMode === 'unpack') {
         const clicked = frames.find(
@@ -146,32 +305,40 @@ export function CanvasViewport() {
         }
       }
 
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - viewport.panX, y: e.clientY - viewport.panY });
+      isDraggingRef.current = true;
+      dragStartRef.current = { x: e.clientX - panRef.current.x, y: e.clientY - panRef.current.y };
     }
   };
 
+  // Ultra-Fast MouseMove (zero React state updates)
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
-    if (rect) {
-      const imgX = Math.floor((e.clientX - rect.left - viewport.panX) / viewport.zoom);
-      const imgY = Math.floor((e.clientY - rect.top - viewport.panY) / viewport.zoom);
-      setMousePos({ x: imgX, y: imgY });
+    if (rect && coordRef.current) {
+      const imgX = Math.floor((e.clientX - rect.left - panRef.current.x) / zoomRef.current);
+      const imgY = Math.floor((e.clientY - rect.top - panRef.current.y) / zoomRef.current);
+      coordRef.current.textContent = `${imgX}, ${imgY}`;
     }
 
-    if (isDragging) {
-      setViewport({
-        panX: e.clientX - dragStart.x,
-        panY: e.clientY - dragStart.y,
-      });
+    if (isDraggingRef.current) {
+      panRef.current = {
+        x: e.clientX - dragStartRef.current.x,
+        y: e.clientY - dragStartRef.current.y,
+      };
+      requestRender();
     }
   };
 
   const handleMouseUp = () => {
-    setIsDragging(false);
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      setViewport({
+        panX: panRef.current.x,
+        panY: panRef.current.y,
+      });
+    }
   };
 
-  // Center / Fit Image to Viewport
+  // Fit to screen
   const fitToScreen = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -191,130 +358,12 @@ export function CanvasViewport() {
     const panX = (container.clientWidth - targetW * newZoom) / 2;
     const panY = (container.clientHeight - targetH * newZoom) / 2;
 
+    panRef.current = { x: panX, y: panY };
+    zoomRef.current = newZoom;
+
     setViewport({ zoom: newZoom, panX, panY });
-  }, [appMode, sourceImage, atlasResult, setViewport]);
-
-  // Main Canvas Render Loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.imageSmoothingEnabled = false;
-
-    // 1. Soothing Low-Contrast Checkerboard (Charcoal palette)
-    const { width: cw, height: ch } = canvas;
-    ctx.clearRect(0, 0, cw, ch);
-
-    const checkSize = 16;
-    for (let y = 0; y < ch; y += checkSize) {
-      for (let x = 0; x < cw; x += checkSize) {
-        ctx.fillStyle =
-          (Math.floor(x / checkSize) + Math.floor(y / checkSize)) % 2 === 0
-            ? '#121317'
-            : '#18191f';
-        ctx.fillRect(x, y, checkSize, checkSize);
-      }
-    }
-
-    // 2. Apply Pan & Zoom transformation
-    ctx.save();
-    ctx.translate(viewport.panX, viewport.panY);
-    ctx.scale(viewport.zoom, viewport.zoom);
-
-    if (appMode === 'unpack' && sourceImage) {
-      ctx.drawImage(sourceImage, 0, 0);
-
-      // Grid overlay
-      if (viewport.showGrid && unpackConfig.mode === 'grid') {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-        ctx.lineWidth = 1 / viewport.zoom;
-        const fw = unpackConfig.frameWidth;
-        const fh = unpackConfig.frameHeight;
-        const sx = unpackConfig.spacingX;
-        const sy = unpackConfig.spacingY;
-
-        for (let y = unpackConfig.marginY; y + fh <= sourceImage.naturalHeight; y += fh + sy) {
-          for (let x = unpackConfig.marginX; x + fw <= sourceImage.naturalWidth; x += fw + sx) {
-            ctx.strokeRect(x, y, fw, fh);
-          }
-        }
-      }
-
-      // Bounding Boxes: crisp, delicate 1px borders
-      if (viewport.showBBoxes) {
-        frames.forEach((frame, idx) => {
-          const isSelected = selectedFrameIds.includes(frame.id);
-
-          ctx.lineWidth = (isSelected ? 1.5 : 1) / viewport.zoom;
-          ctx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(150, 160, 180, 0.35)';
-          ctx.strokeRect(frame.frame.x, frame.frame.y, frame.frame.w, frame.frame.h);
-
-          if (isSelected) {
-            ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
-            ctx.fillRect(frame.frame.x, frame.frame.y, frame.frame.w, frame.frame.h);
-
-            // Pivot indicator
-            const pivotPx = frame.frame.x + frame.frame.w * frame.pivot.x;
-            const pivotPy = frame.frame.y + frame.frame.h * frame.pivot.y;
-            ctx.strokeStyle = '#f43f5e';
-            ctx.lineWidth = 1.2 / viewport.zoom;
-            ctx.beginPath();
-            ctx.arc(pivotPx, pivotPy, 3.5 / viewport.zoom, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-
-          if (viewport.zoom >= 0.9) {
-            ctx.fillStyle = isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.5)';
-            ctx.font = `${Math.max(9, Math.floor(9 / viewport.zoom))}px monospace`;
-            ctx.fillText(
-              `#${idx}`,
-              frame.frame.x + 2 / viewport.zoom,
-              frame.frame.y + 9 / viewport.zoom
-            );
-          }
-        });
-      }
-    } else if (appMode === 'pack' && atlasResult) {
-      ctx.drawImage(atlasResult.canvas, 0, 0);
-
-      // Atlas border
-      ctx.strokeStyle = 'rgba(234, 179, 8, 0.5)';
-      ctx.lineWidth = 1 / viewport.zoom;
-      ctx.strokeRect(0, 0, atlasResult.width, atlasResult.height);
-
-      if (viewport.showBBoxes) {
-        atlasResult.frames.forEach((pf) => {
-          const isSelected = selectedFrameIds.includes(pf.id);
-
-          ctx.lineWidth = (isSelected ? 1.5 : 1) / viewport.zoom;
-          ctx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(52, 211, 153, 0.35)';
-          ctx.strokeRect(pf.packedX, pf.packedY, pf.packedW, pf.packedH);
-
-          if (isSelected) {
-            ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
-            ctx.fillRect(pf.packedX, pf.packedY, pf.packedW, pf.packedH);
-          }
-        });
-      }
-    }
-
-    ctx.restore();
-  }, [
-    viewport,
-    appMode,
-    sourceImage,
-    atlasResult,
-    frames,
-    selectedFrameIds,
-    unpackConfig,
-  ]);
+    requestRender();
+  }, [appMode, sourceImage, atlasResult, setViewport, requestRender]);
 
   const hasContent = Boolean(
     sourceImage || (atlasResult && atlasResult.frames.length > 0) || frames.length > 0
@@ -329,8 +378,8 @@ export function CanvasViewport() {
       }}
       onDragLeave={() => setIsDragOver(false)}
       onDrop={handleDrop}
-      className={`relative w-full h-full overflow-hidden select-none bg-[#121316] ${
-        isSpacePressed || isDragging ? 'cursor-grab active:cursor-grabbing' : 'cursor-crosshair'
+      className={`relative w-full h-full overflow-hidden select-none canvas-checkerboard ${
+        isSpacePressed ? 'cursor-grab active:cursor-grabbing' : 'cursor-crosshair'
       }`}
     >
       <canvas
@@ -471,7 +520,7 @@ export function CanvasViewport() {
       {/* Discreet Coordinate & Dimension Info */}
       <div className="absolute bottom-3 right-3 flex items-center gap-2.5 bg-[#1a1b22]/90 backdrop-blur-md border border-[#292a35] rounded-lg px-2.5 py-1 text-zinc-400 text-[11px] font-mono shadow-md">
         <div>
-          {mousePos.x}, {mousePos.y}
+          <span ref={coordRef}>0, 0</span>
         </div>
         <div className="w-[1px] h-3 bg-[#2a2b37]" />
         <div>

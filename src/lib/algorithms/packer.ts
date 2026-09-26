@@ -197,7 +197,6 @@ function prepareFrames(frames: SpriteFrame[], trimAlpha: boolean): SpriteFrame[]
       spriteSourceSize: trim.spriteSourceSize,
       sourceSize: frame.sourceSize || { w: frame.frame.w, h: frame.frame.h },
       canvas: trimmedCanvas,
-      dataUrl: trimmedCanvas.toDataURL('image/png'),
     };
   });
 }

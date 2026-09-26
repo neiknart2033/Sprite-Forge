@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 import { useSpriteStore } from '@/store/useSpriteStore';
 import {
   Play,
   Pause,
   Repeat,
-  Film,
-  Download,
   SkipBack,
   SkipForward,
   ChevronDown,
@@ -15,6 +13,33 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { generateAndDownloadGif } from '@/lib/export/exporter';
+
+// Lightweight GPU canvas-to-canvas thumbnail renderer (zero toDataURL strings)
+const FrameThumbnail = memo(function FrameThumbnail({ canvas }: { canvas?: HTMLCanvasElement }) {
+  const thumbRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const thumb = thumbRef.current;
+    if (!thumb || !canvas) return;
+
+    thumb.width = 44;
+    thumb.height = 44;
+    const ctx = thumb.getContext('2d');
+    if (!ctx) return;
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, 44, 44);
+
+    const scale = Math.min(44 / Math.max(1, canvas.width), 44 / Math.max(1, canvas.height), 1);
+    const w = canvas.width * scale;
+    const h = canvas.height * scale;
+    const x = Math.round((44 - w) / 2);
+    const y = Math.round((44 - h) / 2);
+    ctx.drawImage(canvas, x, y, w, h);
+  }, [canvas]);
+
+  return <canvas ref={thumbRef} className="max-w-full max-h-full block [image-rendering:pixelated]" />;
+});
 
 export function AnimationPreview() {
   const { frames, selectedFrameIds, animationConfig, updateAnimationConfig, sourceImageName } =
@@ -57,7 +82,7 @@ export function AnimationPreview() {
     return () => clearInterval(timer);
   }, [animationConfig.isPlaying, animationConfig.fps, animationConfig.pingPong, animFrames.length]);
 
-  // Render current frame
+  // Render current frame on preview canvas (Instant GPU clear)
   useEffect(() => {
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -66,18 +91,7 @@ export function AnimationPreview() {
     if (!ctx) return;
 
     ctx.imageSmoothingEnabled = false;
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const checkSize = 8;
-    for (let y = 0; y < canvas.height; y += checkSize) {
-      for (let x = 0; x < canvas.width; x += checkSize) {
-        ctx.fillStyle =
-          (Math.floor(x / checkSize) + Math.floor(y / checkSize)) % 2 === 0
-            ? '#16171d'
-            : '#1e1f26';
-        ctx.fillRect(x, y, checkSize, checkSize);
-      }
-    }
 
     if (animFrames.length === 0) return;
     const currentFrame = animFrames[activeFrameIdx] || animFrames[0];
@@ -157,6 +171,21 @@ export function AnimationPreview() {
             />
           </div>
 
+          {/* Zoom Selector */}
+          <div className="hidden sm:flex items-center gap-1 text-[11px] text-zinc-400">
+            <span>Zoom:</span>
+            <select
+              value={animationConfig.zoom}
+              onChange={(e) => updateAnimationConfig({ zoom: Number(e.target.value) })}
+              className="bg-[#1e1f26] border border-[#2b2d38] text-zinc-200 text-[11px] rounded px-1 py-0.5"
+            >
+              <option value={1}>1×</option>
+              <option value={2}>2×</option>
+              <option value={3}>3×</option>
+              <option value={4}>4×</option>
+            </select>
+          </div>
+
           {/* Ping-pong toggle */}
           <button
             onClick={() => updateAnimationConfig({ pingPong: !animationConfig.pingPong })}
@@ -193,7 +222,7 @@ export function AnimationPreview() {
               ref={previewCanvasRef}
               width={96}
               height={80}
-              className="border border-[#262731] rounded"
+              className="border border-[#262731] rounded canvas-checkerboard-sm"
             />
             <div className="flex items-center gap-2 mt-2">
               <button
@@ -243,15 +272,7 @@ export function AnimationPreview() {
                     }`}
                   >
                     <div className="w-12 h-12 bg-[#121316] rounded flex items-center justify-center overflow-hidden">
-                      {frame.dataUrl ? (
-                        <img
-                          src={frame.dataUrl}
-                          alt={frame.name}
-                          className="max-w-full max-h-full object-contain [image-rendering:pixelated]"
-                        />
-                      ) : (
-                        <span className="text-[9px] text-zinc-600">#{index}</span>
-                      )}
+                      <FrameThumbnail canvas={frame.canvas} />
                     </div>
                     <span className="text-[10px] font-mono text-zinc-500 mt-1">{index + 1}</span>
                   </div>

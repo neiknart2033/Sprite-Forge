@@ -227,7 +227,6 @@ export function sliceUniformGrid(
         sourceSize: { w: frameWidth, h: frameHeight },
         pivot: { x: 0.5, y: 1.0 }, // Standard 2D game bottom-center anchor
         canvas: frameCanvas,
-        dataUrl: frameCanvas.toDataURL('image/png'),
         isSelected: false,
       });
 
@@ -361,7 +360,6 @@ export function sliceAlphaDetect(
       sourceSize: { w: rect.w, h: rect.h },
       pivot: { x: 0.5, y: 1.0 },
       canvas: frameCanvas,
-      dataUrl: frameCanvas.toDataURL('image/png'),
       isSelected: false,
     });
   });

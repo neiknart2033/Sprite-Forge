@@ -66,6 +66,9 @@ interface SpriteStore {
   resetAll: () => void;
 }
 
+let unpackDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let packDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 export const useSpriteStore = create<SpriteStore>((set, get) => ({
   appMode: 'unpack',
   viewMode: 'artist',
@@ -228,7 +231,6 @@ export const useSpriteStore = create<SpriteStore>((set, get) => ({
         sourceSize: { w: img.naturalWidth, h: img.naturalHeight },
         pivot: { x: 0.5, y: 1.0 },
         canvas,
-        dataUrl: canvas.toDataURL('image/png'),
         isSelected: false,
       });
     }
@@ -278,14 +280,20 @@ export const useSpriteStore = create<SpriteStore>((set, get) => ({
     set((state) => ({
       unpackConfig: { ...state.unpackConfig, ...config },
     }));
-    get().runUnpack();
+    if (unpackDebounceTimer) clearTimeout(unpackDebounceTimer);
+    unpackDebounceTimer = setTimeout(() => {
+      get().runUnpack();
+    }, 120);
   },
 
   updatePackConfig: (config) => {
     set((state) => ({
       packConfig: { ...state.packConfig, ...config },
     }));
-    get().runPack();
+    if (packDebounceTimer) clearTimeout(packDebounceTimer);
+    packDebounceTimer = setTimeout(() => {
+      get().runPack();
+    }, 120);
   },
 
   updateAnimationConfig: (config) => {
