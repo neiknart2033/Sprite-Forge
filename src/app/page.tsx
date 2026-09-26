@@ -7,12 +7,13 @@ import { LeftToolbar } from '@/components/layout/LeftToolbar';
 import { CanvasViewport } from '@/components/canvas/CanvasViewport';
 import { AnimationPreview } from '@/components/preview/AnimationPreview';
 import { RightPanel } from '@/components/layout/RightPanel';
+import { ExportModal } from '@/components/export/ExportModal';
 import { SeoDocumentation } from '@/components/content/SeoDocumentation';
 import { useSpriteStore } from '@/store/useSpriteStore';
 import { Eye, Film, Sliders } from 'lucide-react';
 
 export default function SpriteForgePage() {
-  const { frames } = useSpriteStore();
+  const { frames, isExportModalOpen, closeExportModal, exportModalTarget } = useSpriteStore();
 
   // Tablet (< xl, >= md): Switch between Results/Anim and Inspector in single right sidebar
   const [tabletSideTab, setTabletSideTab] = useState<'preview' | 'inspector'>('preview');
@@ -141,6 +142,13 @@ export default function SpriteForgePage() {
 
       {/* 4. Below-the-Fold SEO Landing Zone */}
       <SeoDocumentation />
+
+      {/* 5. Game Engine Export Modal (Unity, Godot, Phaser, etc.) */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={closeExportModal}
+        defaultTarget={exportModalTarget}
+      />
     </main>
   );
 }

@@ -47,7 +47,13 @@ interface SpriteStore {
   animationConfig: AnimationConfig;
   viewport: ViewportState;
 
+  // Export modal state
+  isExportModalOpen: boolean;
+  exportModalTarget: 'unity' | 'godot' | 'phaser' | 'csv' | 'css' | 'frames' | 'gif' | 'universal';
+
   // Actions
+  openExportModal: (target?: 'unity' | 'godot' | 'phaser' | 'csv' | 'css' | 'frames' | 'gif' | 'universal') => void;
+  closeExportModal: () => void;
   setAppMode: (mode: AppMode) => void;
   setViewMode: (mode: ViewMode) => void;
   loadSourceImage: (file: File) => Promise<void>;
@@ -74,6 +80,11 @@ export const useSpriteStore = create<SpriteStore>((set, get) => ({
   viewMode: 'artist',
   isProcessing: false,
   processingProgress: 0,
+
+  isExportModalOpen: false,
+  exportModalTarget: 'unity',
+  openExportModal: (target = 'unity') => set({ isExportModalOpen: true, exportModalTarget: target }),
+  closeExportModal: () => set({ isExportModalOpen: false }),
 
   sourceImage: null,
   sourceImageUrl: null,

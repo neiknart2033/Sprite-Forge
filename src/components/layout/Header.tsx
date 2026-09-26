@@ -12,6 +12,7 @@ import {
   FileCode,
   Sparkles,
   ChevronDown,
+  Gamepad2,
 } from 'lucide-react';
 import {
   downloadAtlasZip,
@@ -35,6 +36,7 @@ export function Header() {
     animationConfig,
     runUnpack,
     runPack,
+    openExportModal,
   } = useSpriteStore();
 
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -216,66 +218,102 @@ export function Header() {
           </button>
 
           {isExportMenuOpen && (
-            <div className="absolute right-0 mt-1.5 w-60 bg-[#1c1d23] border border-[#2c2d38] rounded-lg shadow-xl p-1 z-50 text-xs">
+            <div className="absolute right-0 mt-1.5 w-64 bg-[#1c1d23] border border-[#2c2d38] rounded-xl shadow-2xl p-1 z-50 text-xs">
+              <div className="px-2.5 py-1 text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
+                Game Engine Presets
+              </div>
+
               <button
-                onClick={handleExportAtlasBundle}
-                disabled={!atlasResult}
-                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-md flex items-center gap-2.5 text-zinc-200 transition"
+                onClick={() => {
+                  setIsExportMenuOpen(false);
+                  openExportModal('unity');
+                }}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] rounded-lg flex items-center gap-2.5 text-zinc-200 transition"
               >
-                <FileArchive className="w-3.5 h-3.5 text-blue-400" />
+                <Gamepad2 className="w-3.5 h-3.5 text-blue-400" />
                 <div>
-                  <div className="font-medium text-xs">Atlas Bundle (ZIP)</div>
-                  <div className="text-[10px] text-zinc-500">PNG + JSON + Godot .tres + CSS</div>
+                  <div className="font-semibold text-xs text-zinc-100">Unity 2D Package</div>
+                  <div className="text-[10px] text-zinc-500">.png + .meta (Multiple Sprites)</div>
                 </div>
               </button>
 
               <button
-                onClick={handleExportJsonOnly}
-                disabled={!atlasResult}
-                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-md flex items-center gap-2.5 text-zinc-200 transition"
+                onClick={() => {
+                  setIsExportMenuOpen(false);
+                  openExportModal('godot');
+                }}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] rounded-lg flex items-center gap-2.5 text-zinc-200 transition"
               >
-                <FileCode className="w-3.5 h-3.5 text-zinc-400" />
+                <FileCode className="w-3.5 h-3.5 text-blue-400" />
                 <div>
-                  <div className="font-medium text-xs">Phaser / PixiJS JSON</div>
-                  <div className="text-[10px] text-zinc-500">Hash format metadata</div>
+                  <div className="font-semibold text-xs text-zinc-100">Godot 4 Resource</div>
+                  <div className="text-[10px] text-zinc-500">SpriteFrames (.tres) for AnimatedSprite2D</div>
                 </div>
               </button>
 
               <button
-                onClick={handleExportGodotOnly}
-                disabled={!atlasResult}
-                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-md flex items-center gap-2.5 text-zinc-200 transition"
+                onClick={() => {
+                  setIsExportMenuOpen(false);
+                  openExportModal('phaser');
+                }}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] rounded-lg flex items-center gap-2.5 text-zinc-200 transition"
               >
                 <FileCode className="w-3.5 h-3.5 text-zinc-400" />
                 <div>
-                  <div className="font-medium text-xs">Godot 4 Atlas (.tres)</div>
-                  <div className="text-[10px] text-zinc-500">AtlasTexture resource</div>
+                  <div className="font-semibold text-xs text-zinc-100">Phaser 3 / PixiJS</div>
+                  <div className="text-[10px] text-zinc-500">JSON Hash / Array format metadata</div>
+                </div>
+              </button>
+
+              <div className="h-[1px] bg-[#292a34] my-1" />
+
+              <div className="px-2.5 py-1 text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
+                Asset Files
+              </div>
+
+              <button
+                onClick={() => {
+                  setIsExportMenuOpen(false);
+                  openExportModal('frames');
+                }}
+                disabled={frames.length === 0}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-lg flex items-center gap-2.5 text-zinc-200 transition"
+              >
+                <FileArchive className="w-3.5 h-3.5 text-zinc-400" />
+                <div>
+                  <div className="font-medium text-xs">Individual Frame PNGs (ZIP)</div>
+                  <div className="text-[10px] text-zinc-500">{frames.length} separate frame images</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsExportMenuOpen(false);
+                  openExportModal('gif');
+                }}
+                disabled={frames.length === 0}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-lg flex items-center gap-2.5 text-zinc-200 transition"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <div>
+                  <div className="font-medium text-xs">Animated GIF</div>
+                  <div className="text-[10px] text-zinc-500">Looped preview animation</div>
                 </div>
               </button>
 
               <div className="h-[1px] bg-[#292a34] my-1" />
 
               <button
-                onClick={handleExportFramesZip}
-                disabled={frames.length === 0}
-                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-md flex items-center gap-2.5 text-zinc-200 transition"
+                onClick={() => {
+                  setIsExportMenuOpen(false);
+                  openExportModal('universal');
+                }}
+                className="w-full text-left px-2.5 py-2 hover:bg-[#262838] bg-[#1e202c] rounded-lg flex items-center gap-2.5 text-blue-300 transition"
               >
-                <FileArchive className="w-3.5 h-3.5 text-zinc-400" />
+                <Download className="w-3.5 h-3.5 text-blue-400" />
                 <div>
-                  <div className="font-medium text-xs">Individual Frames (ZIP)</div>
-                  <div className="text-[10px] text-zinc-500">Extracted frame_000.png</div>
-                </div>
-              </button>
-
-              <button
-                onClick={handleExportGif}
-                disabled={frames.length === 0}
-                className="w-full text-left px-2.5 py-2 hover:bg-[#252732] disabled:opacity-30 rounded-md flex items-center gap-2.5 text-zinc-200 transition"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                <div>
-                  <div className="font-medium text-xs">Animated GIF</div>
-                  <div className="text-[10px] text-zinc-500">Preview animation loop</div>
+                  <div className="font-semibold text-xs text-blue-300">All Export Options & Presets...</div>
+                  <div className="text-[10px] text-zinc-400">Unity, Godot, CSV, CSS & Universal Bundle</div>
                 </div>
               </button>
             </div>

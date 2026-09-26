@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useSpriteStore } from '@/store/useSpriteStore';
-import { Box, Scissors, Layers } from 'lucide-react';
+import { Box, Scissors, Layers, Gamepad2 } from 'lucide-react';
 
 export function RightPanel() {
   const {
@@ -18,6 +18,7 @@ export function RightPanel() {
     selectedFrameIds,
     runUnpack,
     runPack,
+    openExportModal,
   } = useSpriteStore();
 
   return (
@@ -391,6 +392,18 @@ export function RightPanel() {
               </div>
             </>
           )}
+        </div>
+
+        {/* Game Engine Export Action Button */}
+        <div className="pt-2">
+          <button
+            onClick={() => openExportModal('unity')}
+            disabled={frames.length === 0 && !atlasResult}
+            className="w-full py-2 px-3 bg-[#242735] hover:bg-[#2b2f42] border border-[#35394f] text-zinc-100 font-medium rounded-lg flex items-center justify-center gap-2 text-xs transition disabled:opacity-40 shadow-xs"
+          >
+            <Gamepad2 className="w-3.5 h-3.5 text-blue-400" />
+            <span>Export for Unity / Godot...</span>
+          </button>
         </div>
       </div>
 
