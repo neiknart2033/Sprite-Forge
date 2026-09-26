@@ -86,7 +86,7 @@ export const useSpriteStore = create<SpriteStore>((set, get) => ({
   atlasResult: null,
 
   unpackConfig: {
-    mode: 'grid',
+    mode: 'alpha',
     frameWidth: 32,
     frameHeight: 32,
     marginX: 0,

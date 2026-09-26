@@ -51,6 +51,16 @@ export function RightPanel() {
               <label className="text-[11px] text-zinc-400 font-medium">Detection Method</label>
               <div className="grid grid-cols-2 gap-1 p-0.5 bg-[#1f2027] border border-[#2b2d38] rounded-md">
                 <button
+                  onClick={() => updateUnpackConfig({ mode: 'alpha' })}
+                  className={`py-1 rounded text-[11px] font-medium transition ${
+                    unpackConfig.mode === 'alpha'
+                      ? 'bg-[#2b2d39] text-zinc-100 shadow-xs'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  Auto Detect
+                </button>
+                <button
                   onClick={() => updateUnpackConfig({ mode: 'grid' })}
                   className={`py-1 rounded text-[11px] font-medium transition ${
                     unpackConfig.mode === 'grid'
@@ -59,16 +69,6 @@ export function RightPanel() {
                   }`}
                 >
                   Grid
-                </button>
-                <button
-                  onClick={() => updateUnpackConfig({ mode: 'alpha' })}
-                  className={`py-1 rounded text-[11px] font-medium transition ${
-                    unpackConfig.mode === 'alpha'
-                      ? 'bg-[#2b2d39] text-zinc-100 shadow-xs'
-                      : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-                >
-                  Alpha
                 </button>
               </div>
             </div>
