@@ -232,6 +232,14 @@ export function SeoDocumentation() {
           <span>© {new Date().getFullYear()} Sprite-Forge. Free Open Web Utility.</span>
         </div>
         <div className="flex items-center gap-6">
+          <a
+            href="https://buymeacoffee.com/niertnartdev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#ffdd00] hover:text-[#ffe633] font-medium transition flex items-center gap-1.5"
+          >
+            <span>☕ Buy me a coffee</span>
+          </a>
           <a href="#" className="hover:text-zinc-300 transition">
             Privacy Policy
           </a>

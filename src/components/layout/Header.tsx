@@ -13,6 +13,7 @@ import {
   Sparkles,
   ChevronDown,
   Gamepad2,
+  Coffee,
 } from 'lucide-react';
 import {
   downloadAtlasZip,
@@ -205,8 +206,23 @@ export function Header() {
           </div>
         </div>
 
-        {/* Right: Export Button */}
-        <div className="relative">
+        {/* Right: Actions (Donate & Export) */}
+        <div className="flex items-center gap-2">
+          {/* Buy Me a Coffee / Donate Button */}
+          <a
+            href="https://buymeacoffee.com/niertnartdev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#ffdd00]/10 hover:bg-[#ffdd00]/20 border border-[#ffdd00]/30 hover:border-[#ffdd00]/50 text-[#ffdd00] hover:text-[#ffe633] font-medium text-xs rounded-md transition shadow-xs group"
+            title="Support on Buy Me a Coffee"
+          >
+            <Coffee className="w-3.5 h-3.5 text-[#ffdd00] transition group-hover:scale-110" />
+            <span className="hidden sm:inline font-semibold">Buy me a coffee</span>
+            <span className="sm:hidden font-semibold">Donate</span>
+          </a>
+
+          {/* Export Button */}
+          <div className="relative">
           <button
             onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
             disabled={frames.length === 0 && !atlasResult}
@@ -319,7 +335,8 @@ export function Header() {
             </div>
           )}
         </div>
-      </header>
+      </div>
+    </header>
 
       {/* Clean Slate Export Progress Modal */}
       {exportModal.isOpen && (
