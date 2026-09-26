@@ -48,38 +48,38 @@ export function LeftToolbar() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp"
+        accept="image/png,image/jpeg,image/jpg,image/webp,.png,.jpg,.jpeg,.webp"
         onChange={handleSingleUpload}
         className="hidden"
       />
       <button
         onClick={() => fileInputRef.current?.click()}
         className="w-7 h-7 rounded-md hover:bg-[#252733] text-zinc-400 hover:text-zinc-100 flex items-center justify-center transition group relative"
-        title="Upload Sprite Sheet"
+        title="Upload Sprite Sheet (PNG, JPG, WebP)"
       >
         <Upload className="w-3.5 h-3.5" />
         <span className="absolute left-10 bg-[#202129] border border-[#2e303d] text-zinc-200 text-[11px] px-2 py-0.5 rounded shadow whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition z-50">
-          Upload Sheet
+          Upload Sheet (PNG, JPG)
         </span>
       </button>
 
-      {/* Upload Multiple Frame PNGs */}
+      {/* Upload Multiple Frame PNGs / JPGs */}
       <input
         ref={multiFileInputRef}
         type="file"
         multiple
-        accept="image/png,image/jpeg,image/webp"
+        accept="image/png,image/jpeg,image/jpg,image/webp,.png,.jpg,.jpeg,.webp"
         onChange={handleMultiUpload}
         className="hidden"
       />
       <button
         onClick={() => multiFileInputRef.current?.click()}
         className="w-7 h-7 rounded-md hover:bg-[#252733] text-zinc-400 hover:text-zinc-100 flex items-center justify-center transition group relative"
-        title="Import Frame Files"
+        title="Import Frame Files (PNG, JPG, WebP)"
       >
         <FolderOpen className="w-3.5 h-3.5" />
         <span className="absolute left-10 bg-[#202129] border border-[#2e303d] text-zinc-200 text-[11px] px-2 py-0.5 rounded shadow whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition z-50">
-          Import Frames
+          Import Frames (PNG, JPG)
         </span>
       </button>
 

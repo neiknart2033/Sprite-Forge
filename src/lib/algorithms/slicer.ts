@@ -1,5 +1,51 @@
 import { Rect, SpriteFrame, UnpackConfig } from '@/types';
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  let c = hex.replace('#', '').trim();
+  if (c.length === 3) {
+    c = c.split('').map((char) => char + char).join('');
+  }
+  const num = parseInt(c, 16);
+  if (isNaN(num)) return { r: 255, g: 255, b: 255 };
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255,
+  };
+}
+
+function isMatchingColor(
+  r: number,
+  g: number,
+  b: number,
+  keyRgb: { r: number; g: number; b: number },
+  tolerance: number
+): boolean {
+  const dr = r - keyRgb.r;
+  const dg = g - keyRgb.g;
+  const db = b - keyRgb.b;
+  const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+  const maxDistance = 441.67; // sqrt(255^2 * 3)
+  return dist <= (tolerance / 100) * maxDistance;
+}
+
+function applyChromaKey(imageData: ImageData, hexColor: string, tolerance: number) {
+  const keyRgb = hexToRgb(hexColor);
+  const data = imageData.data;
+  const totalPixels = data.length / 4;
+
+  for (let i = 0; i < totalPixels; i++) {
+    const idx = i * 4;
+    const r = data[idx];
+    const g = data[idx + 1];
+    const b = data[idx + 2];
+
+    if (isMatchingColor(r, g, b, keyRgb, tolerance)) {
+      data[idx + 3] = 0; // Set alpha to 0 (transparent)
+    }
+  }
+}
+
 /**
  * Checks if a rectangular region in ImageData has non-transparent pixels above threshold.
  */
@@ -147,8 +193,11 @@ export function sliceUniformGrid(
   if (!ctx) return [];
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(source, 0, 0);
-
   const imageData = ctx.getImageData(0, 0, width, height);
+  if (config.removeBgColor) {
+    applyChromaKey(imageData, config.bgKeyColor || '#ffffff', config.colorTolerance ?? 15);
+    ctx.putImageData(imageData, 0, 0);
+  }
   const frames: SpriteFrame[] = [];
 
   const { frameWidth, frameHeight, marginX, marginY, spacingX, spacingY, discardEmpty, alphaThreshold } =
@@ -209,6 +258,10 @@ export function sliceAlphaDetect(
   ctx.drawImage(source, 0, 0);
 
   const imageData = ctx.getImageData(0, 0, width, height);
+  if (config.removeBgColor) {
+    applyChromaKey(imageData, config.bgKeyColor || '#ffffff', config.colorTolerance ?? 15);
+    ctx.putImageData(imageData, 0, 0);
+  }
   const data = imageData.data;
   const visited = new Uint8Array(width * height);
   const { alphaThreshold, minPixelCount } = config;

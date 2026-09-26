@@ -30,8 +30,11 @@ export function Header() {
     setViewMode,
     atlasResult,
     frames,
+    sourceImage,
     sourceImageName,
     animationConfig,
+    runUnpack,
+    runPack,
   } = useSpriteStore();
 
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -147,6 +150,29 @@ export function Header() {
               <span>Atlas Packer</span>
             </button>
           </div>
+
+          {/* Direct Action Button: Cắt Sprite / Đóng Gói Atlas */}
+          {appMode === 'unpack' ? (
+            <button
+              onClick={runUnpack}
+              disabled={!sourceImage}
+              className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-md transition shadow-xs"
+              title="Cắt Sprite Sheet thành các frame riêng"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+              <span>Cắt Sprite</span>
+            </button>
+          ) : (
+            <button
+              onClick={runPack}
+              disabled={frames.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-md transition shadow-xs"
+              title="Đóng gói các frame vào Texture Atlas"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Đóng Gói Atlas</span>
+            </button>
+          )}
 
           {/* Perspective View Switcher */}
           <div className="hidden md:flex items-center bg-[#1e1f26] border border-[#2b2c36] rounded-md p-0.5 text-xs">

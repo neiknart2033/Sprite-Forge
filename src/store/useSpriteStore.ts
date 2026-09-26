@@ -93,6 +93,9 @@ export const useSpriteStore = create<SpriteStore>((set, get) => ({
     discardEmpty: true,
     alphaThreshold: 10,
     minPixelCount: 4,
+    removeBgColor: false,
+    bgKeyColor: '#ffffff',
+    colorTolerance: 15,
   },
 
   packConfig: {
@@ -132,6 +135,21 @@ export const useSpriteStore = create<SpriteStore>((set, get) => ({
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
+        const isJpg = file.type === 'image/jpeg' || /\.jpe?g$/i.test(file.name);
+        let detectedBg = '#ffffff';
+
+        if (isJpg) {
+          const c = document.createElement('canvas');
+          c.width = 1;
+          c.height = 1;
+          const ctx = c.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, 1, 1, 0, 0, 1, 1);
+            const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+            detectedBg = '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('');
+          }
+        }
+
         set({
           sourceImage: img,
           sourceImageUrl: url,
@@ -141,8 +159,24 @@ export const useSpriteStore = create<SpriteStore>((set, get) => ({
           // Auto estimate frame size for grid
           unpackConfig: {
             ...get().unpackConfig,
-            frameWidth: img.naturalWidth >= 32 ? (img.naturalWidth % 32 === 0 ? 32 : img.naturalWidth % 16 === 0 ? 16 : 32) : img.naturalWidth,
-            frameHeight: img.naturalHeight >= 32 ? (img.naturalHeight % 32 === 0 ? 32 : img.naturalHeight % 16 === 0 ? 16 : 32) : img.naturalHeight,
+            removeBgColor: isJpg,
+            bgKeyColor: detectedBg,
+            frameWidth:
+              img.naturalWidth >= 32
+                ? img.naturalWidth % 32 === 0
+                  ? 32
+                  : img.naturalWidth % 16 === 0
+                  ? 16
+                  : 32
+                : img.naturalWidth,
+            frameHeight:
+              img.naturalHeight >= 32
+                ? img.naturalHeight % 32 === 0
+                  ? 32
+                  : img.naturalHeight % 16 === 0
+                  ? 16
+                  : 32
+                : img.naturalHeight,
           },
           // Center canvas view
           viewport: {

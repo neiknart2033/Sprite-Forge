@@ -57,6 +57,9 @@ export interface UnpackConfig {
   discardEmpty: boolean;
   alphaThreshold: number; // 0 - 255
   minPixelCount: number; // Minimum pixels to count as sprite
+  removeBgColor: boolean; // For JPG and solid background sprite sheets
+  bgKeyColor: string; // Hex color like '#ffffff' or '#000000'
+  colorTolerance: number; // 0 - 100
 }
 
 export interface PackConfig {
