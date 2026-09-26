@@ -21,9 +21,9 @@ export function RightPanel() {
   } = useSpriteStore();
 
   return (
-    <aside className="w-64 border-l border-[#25262e] bg-[#16171c] flex flex-col h-full select-none z-20 overflow-y-auto text-xs">
+    <aside className="w-full md:w-64 shrink-0 border-l border-[#25262e] bg-[#16171c] flex flex-col h-full max-h-full min-h-0 select-none z-20 overflow-hidden text-xs">
       {/* Inspector Header */}
-      <div className="px-3.5 py-2.5 border-b border-[#25262e] flex items-center justify-between">
+      <div className="shrink-0 px-3.5 py-2.5 border-b border-[#25262e] flex items-center justify-between bg-[#15161b]">
         <span className="font-semibold text-[11px] text-zinc-300 uppercase tracking-wider">
           {appMode === 'unpack' ? 'Slicer Inspector' : 'Packer Inspector'}
         </span>
@@ -32,7 +32,7 @@ export function RightPanel() {
         </span>
       </div>
 
-      <div className="p-3.5 space-y-4 flex-1">
+      <div className="p-3.5 space-y-4 flex-1 min-h-0 overflow-y-auto">
         {/* ===================== UNPACK (SLICER) SECTION ===================== */}
         {appMode === 'unpack' && (
           <>
@@ -395,7 +395,7 @@ export function RightPanel() {
       </div>
 
       {/* Clean Discreet Ad Container */}
-      <div className="p-3 border-t border-[#25262e] bg-[#14151a] flex flex-col items-center">
+      <div className="shrink-0 p-3 border-t border-[#25262e] bg-[#14151a] flex flex-col items-center">
         <div className="text-[9px] uppercase font-mono tracking-wider text-zinc-600 mb-1">
           Sponsored
         </div>

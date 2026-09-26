@@ -111,43 +111,45 @@ export function Header() {
 
   return (
     <>
-      <header className="h-12 border-b border-[#25262e] bg-[#16171c] px-4 flex items-center justify-between select-none z-30">
+      <header className="h-12 border-b border-[#25262e] bg-[#16171c] px-2.5 sm:px-4 flex items-center justify-between select-none z-30">
         {/* Left: Clean Brand Logo */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-[#252733] border border-[#333544] flex items-center justify-center text-zinc-200">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-md bg-[#252733] border border-[#333544] flex items-center justify-center text-zinc-200 shrink-0">
             <Layers className="w-3.5 h-3.5 text-blue-400" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="font-semibold text-zinc-100 text-xs tracking-tight">Sprite-Forge</span>
             <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">v1.0</span>
           </div>
         </div>
 
         {/* Center: Segmented Controls (Figma / Webflow style) */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Mode Switcher */}
           <div className="flex items-center bg-[#1e1f26] border border-[#2b2c36] rounded-md p-0.5 text-xs">
             <button
               onClick={() => setAppMode('unpack')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded transition text-xs font-medium ${
+              className={`flex items-center gap-1 px-2 sm:px-3 py-1 rounded transition text-xs font-medium ${
                 appMode === 'unpack'
                   ? 'bg-[#2b2d39] text-zinc-100 shadow-sm'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
+              title="Sprite Slicer Mode"
             >
               <Scissors className="w-3 h-3" />
-              <span>Slicer</span>
+              <span className="hidden sm:inline">Slicer</span>
             </button>
             <button
               onClick={() => setAppMode('pack')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded transition text-xs font-medium ${
+              className={`flex items-center gap-1 px-2 sm:px-3 py-1 rounded transition text-xs font-medium ${
                 appMode === 'pack'
                   ? 'bg-[#2b2d39] text-zinc-100 shadow-sm'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
+              title="Texture Atlas Packer Mode"
             >
               <Layers className="w-3 h-3" />
-              <span>Atlas Packer</span>
+              <span className="hidden sm:inline">Packer</span>
             </button>
           </div>
 
@@ -156,26 +158,28 @@ export function Header() {
             <button
               onClick={runUnpack}
               disabled={!sourceImage}
-              className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-md transition shadow-xs"
+              className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-md transition shadow-xs"
               title="Slice sprite sheet into individual frames"
             >
               <Scissors className="w-3.5 h-3.5" />
-              <span>Slice Sheet</span>
+              <span className="hidden sm:inline">Slice Sheet</span>
+              <span className="sm:hidden text-[11px]">Slice</span>
             </button>
           ) : (
             <button
               onClick={runPack}
               disabled={frames.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-md transition shadow-xs"
+              className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-md transition shadow-xs"
               title="Pack frames into an optimal texture atlas"
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Pack Atlas</span>
+              <span className="hidden sm:inline">Pack Atlas</span>
+              <span className="sm:hidden text-[11px]">Pack</span>
             </button>
           )}
 
           {/* Perspective View Switcher */}
-          <div className="hidden md:flex items-center bg-[#1e1f26] border border-[#2b2c36] rounded-md p-0.5 text-xs">
+          <div className="hidden lg:flex items-center bg-[#1e1f26] border border-[#2b2c36] rounded-md p-0.5 text-xs">
             <button
               onClick={() => setViewMode('artist')}
               className={`px-2.5 py-1 rounded transition text-xs font-medium ${
@@ -204,10 +208,10 @@ export function Header() {
           <button
             onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
             disabled={frames.length === 0 && !atlasResult}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#252836] hover:bg-[#2e3142] border border-[#383a4d] disabled:opacity-40 text-zinc-100 font-medium text-xs rounded-md transition shadow-xs"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-[#252836] hover:bg-[#2e3142] border border-[#383a4d] disabled:opacity-40 text-zinc-100 font-medium text-xs rounded-md transition shadow-xs"
           >
             <Download className="w-3.5 h-3.5 text-blue-400" />
-            <span>Export</span>
+            <span className="hidden sm:inline">Export</span>
             <ChevronDown className="w-3 h-3 text-zinc-400 ml-0.5" />
           </button>
 

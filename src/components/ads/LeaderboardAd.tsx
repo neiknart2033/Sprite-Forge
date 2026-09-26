@@ -27,7 +27,7 @@ export function LeaderboardAd() {
       </button>
 
       {!isCollapsed && (
-        <div className="w-[320px] h-[50px] sm:w-[728px] sm:h-[65px] rounded bg-[#181920] border border-[#262732] flex items-center justify-center text-zinc-500 gap-2 text-[11px] my-1">
+        <div className="w-full max-w-[320px] sm:max-w-[728px] h-[50px] sm:h-[65px] rounded bg-[#181920] border border-[#262732] flex items-center justify-center text-zinc-500 gap-2 text-[11px] my-1">
           <Box className="w-3.5 h-3.5 text-zinc-600 stroke-1" />
           <span className="text-zinc-400 font-medium">AdSense Banner (728×90)</span>
         </div>
