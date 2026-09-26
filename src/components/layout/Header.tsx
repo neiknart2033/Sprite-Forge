@@ -151,26 +151,26 @@ export function Header() {
             </button>
           </div>
 
-          {/* Direct Action Button: Cắt Sprite / Đóng Gói Atlas */}
+          {/* Direct Action Button: Slice Sheet / Pack Atlas */}
           {appMode === 'unpack' ? (
             <button
               onClick={runUnpack}
               disabled={!sourceImage}
               className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-md transition shadow-xs"
-              title="Cắt Sprite Sheet thành các frame riêng"
+              title="Slice sprite sheet into individual frames"
             >
               <Scissors className="w-3.5 h-3.5" />
-              <span>Cắt Sprite</span>
+              <span>Slice Sheet</span>
             </button>
           ) : (
             <button
               onClick={runPack}
               disabled={frames.length === 0}
               className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-md transition shadow-xs"
-              title="Đóng gói các frame vào Texture Atlas"
+              title="Pack frames into an optimal texture atlas"
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Đóng Gói Atlas</span>
+              <span>Pack Atlas</span>
             </button>
           )}
 

@@ -343,7 +343,7 @@ export function CanvasViewport() {
         className="w-full h-full block"
       />
 
-      {/* Top Floating Action Pill: Cắt Sprite / Đóng Gói Atlas */}
+      {/* Top Floating Action Pill: Slice Sheet / Pack Atlas */}
       {hasContent && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
           {appMode === 'unpack' ? (
@@ -351,20 +351,20 @@ export function CanvasViewport() {
               onClick={runUnpack}
               disabled={!sourceImage}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-full shadow-lg shadow-blue-500/20 backdrop-blur transition"
-              title="Cắt Sprite Sheet"
+              title="Slice Sprite Sheet"
             >
               <Scissors className="w-3.5 h-3.5" />
-              <span>Cắt Sprite</span>
+              <span>Slice Sheet</span>
             </button>
           ) : (
             <button
               onClick={runPack}
               disabled={frames.length === 0}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs rounded-full shadow-lg shadow-blue-500/20 backdrop-blur transition"
-              title="Đóng Gói Atlas"
+              title="Pack Texture Atlas"
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Đóng Gói Atlas</span>
+              <span>Pack Atlas</span>
             </button>
           )}
         </div>
@@ -379,9 +379,9 @@ export function CanvasViewport() {
             </div>
 
             <div>
-              <h3 className="text-xs font-semibold text-zinc-100">Kéo Thả Ảnh Vào Đây</h3>
+              <h3 className="text-xs font-semibold text-zinc-100">Drop Images Here</h3>
               <p className="text-[11px] text-zinc-500 mt-1">
-                Hỗ trợ ảnh PNG, JPG, JPEG, WebP
+                Supports PNG, JPG, JPEG, and WebP
               </p>
             </div>
 
@@ -391,7 +391,7 @@ export function CanvasViewport() {
                 className="w-full py-1.5 px-3 bg-[#242735] hover:bg-[#2b2e40] border border-[#35384a] text-zinc-200 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition"
               >
                 <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                <span>Thử Demo Knight</span>
+                <span>Load Sample Knight</span>
               </button>
             </div>
           </div>
