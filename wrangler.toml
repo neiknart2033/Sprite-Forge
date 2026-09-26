@@ -1,0 +1,4 @@
+name = "sprite-forge"
+compatibility_date = "2024-09-26"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "out"
