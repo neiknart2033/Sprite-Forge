@@ -97,9 +97,18 @@ function processDirectory(dir) {
     } else if (entry.name.endsWith('.js')) {
       let content = fs.readFileSync(fullPath, 'utf8');
 
-      // Replace chunk base path in Turbopack runtime
-      content = content.replaceAll('"/_next/"', '"./_next/"');
-      content = content.replaceAll('"\\/_next\\/"', '"\\.\\/_next\\/"');
+      // Next.js client runtime uses getAssetPrefix to inspect document.currentScript.src.
+      // In iframes or async scripts, document.currentScript can fail or cause InvariantError E783/E784.
+      // Make getAssetPrefix 100% resilient so React hydration never crashes.
+      if (content.includes('Expected document.currentScript')) {
+        const start = content.indexOf('function l(){let e=document.currentScript');
+        if (start !== -1) {
+          const end = content.indexOf('return t.slice(0,n)}', start) + 'return t.slice(0,n)}'.length;
+          const safeL = 'function l(){try{let e=document.currentScript;if(e instanceof HTMLScriptElement){let{pathname:t}=new URL(e.src),n=t.indexOf(\"/_next/\");if(n!==-1)return t.slice(0,n)}}catch(x){}return \"\"}';
+          content = content.slice(0, start) + safeL + content.slice(end);
+          console.log(`  🛡️ Patched getAssetPrefix in ${entry.name} to ensure flawless React hydration`);
+        }
+      }
 
       fs.writeFileSync(fullPath, content, 'utf8');
     } else if (entry.name.endsWith('.css')) {
