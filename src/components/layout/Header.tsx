@@ -115,16 +115,24 @@ export function Header() {
   return (
     <>
       <header className="h-12 border-b border-[#25262e] bg-[#16171c] px-2.5 sm:px-4 flex items-center justify-between select-none z-30">
-        {/* Left: Clean Brand Logo */}
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-[#252733] border border-[#333544] flex items-center justify-center text-zinc-200 shrink-0">
-            <Layers className="w-3.5 h-3.5 text-blue-400" />
+        {/* Left: Clean Brand Logo & Link to Domain */}
+        <a
+          href="https://sprite-forge.neiknart2033.workers.dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 group cursor-pointer hover:opacity-90 transition select-none"
+          title="Open Sprite-Forge Web Tool (https://sprite-forge.neiknart2033.workers.dev)"
+        >
+          <div className="w-7 h-7 rounded-md bg-[#252733] border border-[#333544] group-hover:border-blue-500/50 flex items-center justify-center text-zinc-200 shrink-0 transition">
+            <Layers className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition" />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-zinc-100 text-xs tracking-tight">Sprite-Forge</span>
+            <span className="font-semibold text-zinc-100 group-hover:text-blue-400 text-xs tracking-tight transition">
+              Sprite-Forge
+            </span>
             <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">v1.0</span>
           </div>
-        </div>
+        </a>
 
         {/* Center: Segmented Controls (Figma / Webflow style) */}
         <div className="flex items-center gap-1.5 sm:gap-3">
