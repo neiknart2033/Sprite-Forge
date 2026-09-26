@@ -1,0 +1,235 @@
+================================================================================
+SOFTWARE REQUIREMENTS & SYSTEM DESIGN SPECIFICATION
+Project Name: Sprite-Forge (Online 2-in-1 Sprite Slicer & Optimal Atlas Packer)
+License: Free Web Utility (Ad-Supported / Google AdSense Optimized)
+Architecture: 100% Client-Side (Zero Server Overhead / Static Deployment)
+Target Audience: Game Developers, Programmers, Pixel Artists, & 2D Animators
+================================================================================
+
+1. PROJECT OVERVIEW & EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+1.1. Mission Statement
+Sprite-Forge is an open, browser-native toolkit that bridges the gap between 
+game programmers and 2D visual artists. It provides bidirectional asset workflows:
+1. UNPACK (Slicing): Splitting composite sprite sheets into standalone frames 
+   via fixed grid or alpha-based auto-detection.
+2. PACK (Atlas Packing): Packing heterogeneous individual frames into a compact, 
+   memory-efficient texture atlas using optimal 2D Bin Packing algorithms 
+   (MaxRects) with transparent trimming, pivot preservation, and texture-bleeding 
+   guards.
+
+1.2. Key Architectural Tenet: Zero Backend (100% Client-Side)
+- All computations, image manipulation, packing heuristics, and file packaging 
+  execute entirely inside the user's browser via HTML5 Canvas, OffscreenCanvas, 
+  and Web Workers.
+- Hosting can be served completely from global CDNs (Cloudflare Pages, Vercel, 
+  or Netlify) at zero ongoing infrastructure cost, maximizing ad revenue margins.
+
+--------------------------------------------------------------------------------
+2. USER PERSONAS & DUAL-AUDIENCE DESIGN CRITERIA
+--------------------------------------------------------------------------------
+Sprite-Forge bridges two distinct user groups through a "Progressive Disclosure" 
+UX model with an immediate toggle: [Artist Mode] <---> [Developer Mode].
+
+2.1. Persona A: The Visual Artist & 2D Animator
+- Core Needs:
+  * Crisp, unblurred display of pixel art (nearest-neighbor scaling).
+  * Smooth timeline & animation preview controls (custom FPS, loop, ping-pong).
+  * Preservation of animation registration/pivot points when trimming empty space.
+  * Direct exports to shareable formats (Animated GIF, APNG) without command-line tools.
+- Friction Points to Avoid:
+  * Blurry bilinear filtering when inspecting pixel assets.
+  * Complex, cryptic configuration fields exposed on first load.
+
+2.2. Persona B: The Game Programmer & Engine Specialist
+- Core Needs:
+  * Strict memory optimization (Power-of-Two textures: 512, 1024, 2048, 4096).
+  * High packing density (>90% fill rate) via heuristic 2D bin packing.
+  * Texture extrude / padding options to eliminate WebGL texture bleeding artifacts.
+  * Ready-to-import metadata exports (JSON Hash/Array for Phaser, Godot .tres, 
+    Unity metadata, CSS Sprites).
+- Friction Points to Avoid:
+  * Inflexible, non-standard JSON formats requiring custom parsing scripts.
+  * Inability to fine-tune spacing and rotation rules.
+
+--------------------------------------------------------------------------------
+3. PRODUCT CRITERIA & QUALITY STANDARDS
+--------------------------------------------------------------------------------
+- CRIT-01: Performance & Responsiveness
+  * UI interactions, canvas panning, and zoom must maintain 60 FPS.
+  * Large packing operations (>150 sprites) must run inside a Web Worker to 
+    prevent freezing the browser's main UI thread.
+- CRIT-02: Zero Data Transmission & Privacy
+  * User visual assets never leave the client's local machine.
+  * No external backend uploads, ensuring immediate compliance with corporate 
+    game studio NDAs.
+- CRIT-03: Visual Fidelity
+  * Render canvases must employ CSS `image-rendering: pixelated` and Canvas2D 
+    `imageSmoothingEnabled = false` for pixel art fidelity.
+- CRIT-04: Cross-Engine Interoperability
+  * Produced JSON metadata must adhere to established, open schema standards 
+    (compatible out-of-the-box with PixiJS, Phaser 3, and Godot 4).
+
+--------------------------------------------------------------------------------
+4. SYSTEM ARCHITECTURE & TECH STACK
+--------------------------------------------------------------------------------
+4.1. Core Technology Stack
+- Framework: Next.js 14 (App Router) or Vite + React 18 / TypeScript
+  (Next.js provides Static Site Generation for maximum SEO indexing).
+- Styling & Components: Tailwind CSS + Lucide Icons + Radix UI primitives.
+- Rendering Engine: HTML5 Canvas Context 2D + OffscreenCanvas.
+- Client-Side Archival: JSZip (for multi-asset ZIP bundles) + FileSaver.js.
+- GIF Generation: `omggif` or `gifshot` (compiled client-side GIF encoder).
+- State Management: Zustand (lightweight, zero-boilerplate state store).
+
+4.2. Algorithmic Modules
+
+A. Unpack Module (Sheet Slicer):
+   1. Uniform Grid Mode:
+      - Traverses image via specified Frame Width (W), Frame Height (H), 
+        Margin X/Y, and Spacing X/Y.
+      - Optional "Discard Empty Frames" pass checking pixel alpha values.
+   2. Alpha Auto-Detect Mode:
+      - Scans `ctx.getImageData()` for pixels with Alpha > Threshold (default: 10).
+      - Executes Breadth-First Search (BFS) / Connected-Component Labeling (CCL)
+        to identify disjoint pixel clusters and calculate minimum bounding boxes.
+
+B. Pack Module (Optimal 2D Texture Packer):
+   1. Heuristic Pre-sorting:
+      - Sort incoming blocks by Maximum Dimension: `Math.max(w, h)` descending,
+        or Area: `w * h` descending.
+   2. Packing Heuristics:
+      - Primary Algorithm: MaxRects (Maximal Rectangles) using Best Short Side 
+        Fit (BSSF) and Best Area Fit (BAF).
+      - Fallback / Lightweight Algorithm: Binary Tree Bin Packing for fast previews.
+   3. Alpha Trimming with Anchor Retention (Pivot Preservation):
+      - Strips empty transparent pixels to save atlas real estate.
+      - Retains original offset coordinates (`spriteSourceSize` vs `sourceSize`) 
+        so game engine runtimes reconstruct animations without jitter.
+   4. Texture Bleed Prevention (Extrude & Padding):
+      - Padding: Configurable transparent spacer (1px - 8px) between rects.
+      - Extrude: Duplicates edge pixels 1px outwards to prevent color leaking 
+        during linear texture filtering and mipmapping.
+
+--------------------------------------------------------------------------------
+5. USER INTERFACE (UI) & WORKSPACE BLUEPRINT
+--------------------------------------------------------------------------------
+
++------------------------------------------------------------------------------+
+| HEADER: Sprite-Forge | Mode: [ Artist View | Developer View ] | [Export All] |
++------------------------------------------------------------------------------+
+| [ LEADERBOARD AD BANNER: 728x90 (Desktop) / 320x50 (Mobile) ]                |
++---------------+----------------------------------------------+---------------+
+| LEFT TOOLBAR  | MAIN WORKSPACE (VIRTUAL CANVAS)              | RIGHT PANEL   |
+|               |                                              |               |
+| [Upload Asset]| - Pan (Space + Drag) & Smooth Zoom (Wheel)   | PROPERTIES    |
+| [Unpack Mode] | - Checkerboard transparency background       | & PARAMETERS  |
+| [Pack Mode]   | - Real-time visual bounding box overlays     |               |
+| [Pivot Tool]  | - Drag & drop rearrangement                  | [Tab: Config] |
+| [Ruler/Grid]  |                                              | - Grid W x H  |
+|               +----------------------------------------------+ - Padding/Gap |
+|               | DOCKABLE ANIMATION PREVIEW                   | - POT Lock    |
+|               | [Play/Pause] [FPS: 12 ▼] [Loop: Yes]         | - Extrude 1px |
+|               | Preview Canvas: [ 2D Animated Character ]    |               |
+|               | Frame Track: [F1] [F2] [F3] [F4] [F5] [+]    | [STICKY AD    |
+|               |                                              |  300x250 or   |
+|               |                                              |  300x600]     |
++---------------+----------------------------------------------+---------------+
+| INFORMATIVE CONTENT & DOCUMENTATION (SEO Landing Zone below fold)             |
+| - Comprehensive Step-by-Step Guide: How to Pack & Unpack Sprite Sheets       |
+| - Technical Reference: Texture Atlases, Draw Calls, and VRAM Efficiency      |
+| - FAQ & Privacy Statement (Zero Server Uploads)                              |
++------------------------------------------------------------------------------+
+| FOOTER: Privacy Policy | Terms of Service | Contact & Feedback               |
++------------------------------------------------------------------------------+
+
+--------------------------------------------------------------------------------
+6. DATA DICTIONARY & METADATA SCHEMAS
+--------------------------------------------------------------------------------
+6.1. Export Metadata Standard (Phaser / PixiJS Compatible JSON Hash)
+{
+  "frames": {
+    "character_idle_01.png": {
+      "frame": { "x": 0, "y": 0, "w": 48, "h": 62 },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 2, "w": 48, "h": 62 },
+      "sourceSize": { "w": 64, "h": 64 },
+      "pivot": { "x": 0.5, "y": 1.0 }
+    }
+  },
+  "meta": {
+    "app": "Sprite-Forge",
+    "version": "1.0.0",
+    "image": "spritesheet.png",
+    "format": "RGBA8888",
+    "size": { "w": 1024, "h": 512 },
+    "scale": 1
+  }
+}
+
+6.2. Alternative Supported Export Formats
+- ZIP Bundle: Individual trimmed or raw `.png` frames formatted as `frame_000.png`.
+- Animated Media: Animated GIF and WebP loops directly renderable in browsers.
+- Godot 4 Atlas: Texture atlas resource mapping (`.tres` definitions).
+- Web CSS Sprites: Generated CSS class definitions with `background-position`.
+
+--------------------------------------------------------------------------------
+7. MONETIZATION, ADSENSE ARCHITECTURE & VIEW-TIME OPTIMIZATION
+--------------------------------------------------------------------------------
+7.1. Ad Unit Placement Strategy
+- Unit 1: Top Leaderboard (728x90 desktop / 320x50 mobile). Positioned below 
+  header, high visual exposure on initial page load.
+- Unit 2: Sticky Right Rail (300x250 or 300x600 Half-Page). Placed immediately 
+  below the configuration sliders. Remains pinned during canvas manipulation, 
+  achieving high viewability scores (>75%).
+- Unit 3: In-Article Native Banner (750x300). Placed within the technical SEO 
+  documentation section below the fold.
+
+7.2. Session-Length & View-Time Mechanics
+- The integrated Animation Preview Player directly boosts average dwell time 
+  (Time-on-Site) past 2-3 minutes, improving ad auction bid pressure (CPM).
+- Non-Intrusive Export Transition: When triggering bulk ZIP or Atlas export, 
+  a 2-second processing progress modal confirms compilation, providing visual 
+  breathing room and guaranteed ad impressions without annoying interstitial popups.
+
+--------------------------------------------------------------------------------
+8. GLOBAL SEO & KEYWORD ACQUISITION STRATEGY
+--------------------------------------------------------------------------------
+8.1. High-Value Target Keywords (Tier 1 English Search Markets)
+- Primary Keywords:
+  * "sprite sheet cutter"
+  * "sprite sheet packer online"
+  * "free texture packer alternative"
+  * "split sprite sheet into frames"
+  * "texture atlas generator online"
+- Long-Tail Technical Keywords:
+  * "godot sprite sheet slicer"
+  * "trim transparent pixels sprite sheet"
+  * "power of two texture atlas packer online"
+
+8.2. Structured Data Markup (JSON-LD)
+Embed `SoftwareApplication` and `WebApplication` schema indicating:
+- Application Category: MultimediaApplication / DeveloperApplication
+- Operating System: Web Browser
+- Price: 0 USD (Free)
+- Feature List: Sprite slicing, MaxRects 2D packing, Animation previewer.
+
+--------------------------------------------------------------------------------
+9. DEVELOPMENT ROADMAP & MILESTONES
+--------------------------------------------------------------------------------
+- Milestone 1 (Core Engine & Unpack MVP):
+  * Canvas pan/zoom setup with pixelated rendering.
+  * Grid slicing + JSZip direct download.
+  * Responsive layout with ad containers.
+
+- Milestone 2 (MaxRects Packing & Trimming):
+  * 2D Bin Packing integration (MaxRects BSSF heuristic).
+  * Transparent boundary trimming with offset metadata calculation.
+  * Standard JSON Hash & Godot export engines.
+
+- Milestone 3 (Animation Player & Polish):
+  * Interactive preview track with real-time FPS adjustment.
+  * Power-of-Two (POT) atlas clamp and 1px extrude shader logic.
+  * Full SEO content writing, privacy policy pages, and AdSense review submission.
+================================================================================
